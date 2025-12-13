@@ -8,15 +8,21 @@ import { config } from '../../config';
 import { eventEmitter, CaseEventType } from '../realtime/eventEmitter';
 import { EvidencePresignInput, EvidenceCompleteInput } from './evidence.schema';
 
-// Initialize S3 client
-const s3 = new AWS.S3({
-  region: config.aws.region,
-  accessKeyId: config.aws.accessKeyId,
-  secretAccessKey: config.aws.secretAccessKey,
-});
+// Check if S3 is configured
+const isS3Configured = !!(config.aws.accessKeyId && config.aws.secretAccessKey);
+
+// Initialize S3 client only if configured
+const s3 = isS3Configured
+  ? new AWS.S3({
+      region: config.aws.region,
+      accessKeyId: config.aws.accessKeyId,
+      secretAccessKey: config.aws.secretAccessKey,
+    })
+  : null;
 
 /**
  * Generate presigned URL for evidence upload
+ * Falls back to mock URL if S3 is not configured (for development/Railway without S3)
  */
 export async function createPresignedUploadUrl(
   caseId: string,
@@ -64,12 +70,22 @@ export async function createPresignedUploadUrl(
   const expiresIn = 300; // 5 minutes
   const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
-  const presignedUrl = s3.getSignedUrl('putObject', {
-    Bucket: config.aws.s3Bucket,
-    Key: objectKey,
-    ContentType: input.content_type,
-    Expires: expiresIn,
-  });
+  let presignedUrl: string;
+
+  if (s3) {
+    // Use real S3
+    presignedUrl = s3.getSignedUrl('putObject', {
+      Bucket: config.aws.s3Bucket,
+      Key: objectKey,
+      ContentType: input.content_type,
+      Expires: expiresIn,
+    });
+  } else {
+    // Mock URL for development without S3
+    // In production on Railway, you'd want to use Railway's volume or a different storage
+    console.warn('[Evidence] S3 not configured, using mock presigned URL');
+    presignedUrl = `/api/evidence/upload/${objectKey}`;
+  }
 
   return {
     upload_url: presignedUrl,
@@ -172,11 +188,7 @@ export async function getCaseEvidence(
       await logEvidenceAccess(evidence.evidence_id, viewerUserId, viewerRole, auditContext);
 
       // Generate signed view URL
-      const viewUrl = s3.getSignedUrl('getObject', {
-        Bucket: config.aws.s3Bucket,
-        Key: evidence.storage_key,
-        Expires: 3600, // 1 hour
-      });
+      const viewUrl = generateViewUrl(evidence.storage_key);
 
       evidenceWithUrls.push({
         ...evidence,
@@ -230,16 +242,28 @@ export async function getEvidenceWithUrl(
   await logEvidenceAccess(evidenceId, viewerUserId, viewerRole, auditContext);
 
   // Generate signed view URL
-  const viewUrl = s3.getSignedUrl('getObject', {
-    Bucket: config.aws.s3Bucket,
-    Key: evidence.storage_key,
-    Expires: 3600,
-  });
+  const viewUrl = generateViewUrl(evidence.storage_key);
 
   return {
     ...evidence,
     view_url: viewUrl,
   };
+}
+
+/**
+ * Generate view URL (S3 or mock)
+ */
+function generateViewUrl(storageKey: string): string {
+  if (s3) {
+    return s3.getSignedUrl('getObject', {
+      Bucket: config.aws.s3Bucket,
+      Key: storageKey,
+      Expires: 3600, // 1 hour
+    });
+  } else {
+    // Mock URL for development without S3
+    return `/api/evidence/view/${storageKey}`;
+  }
 }
 
 /**
