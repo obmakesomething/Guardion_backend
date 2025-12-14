@@ -5,6 +5,11 @@ import { pool } from './pool';
 async function migrate() {
   console.log('Running database migrations...');
 
+  if (!pool) {
+    console.error('Database not configured. Set DATABASE_URL environment variable.');
+    process.exit(1);
+  }
+
   const schemaPath = path.join(__dirname, 'schema.sql');
   const schema = fs.readFileSync(schemaPath, 'utf-8');
 

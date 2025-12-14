@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { config } from './config';
 import { errorHandler } from './middleware/errorHandler';
-import { healthCheck } from './db/pool';
+import { healthCheck, isDatabaseAvailable } from './db/pool';
 import routes from './routes';
 
 const app = express();
@@ -31,12 +31,24 @@ if (config.env !== 'test') {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
-app.get('/health', async (_req: Request, res: Response) => {
-  const dbHealthy = await healthCheck();
+// Liveness check - always returns 200 if server is running
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Readiness check - checks database connectivity
+app.get('/health/ready', async (_req: Request, res: Response) => {
+  const dbConfigured = isDatabaseAvailable();
+  const dbHealthy = dbConfigured ? await healthCheck() : false;
   res.status(dbHealthy ? 200 : 503).json({
-    status: dbHealthy ? 'healthy' : 'unhealthy',
-    database: dbHealthy ? 'connected' : 'disconnected',
+    status: dbHealthy ? 'ready' : 'not_ready',
+    database: {
+      configured: dbConfigured,
+      connected: dbHealthy,
+    },
     timestamp: new Date().toISOString(),
   });
 });
