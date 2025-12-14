@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AnyZodObject, ZodError } from 'zod';
+import { AnyZodObject, ZodError, ZodType } from 'zod';
 import { BadRequestError } from '../lib/errors';
 
 export function validate(schema: AnyZodObject) {
@@ -26,7 +26,7 @@ export function validate(schema: AnyZodObject) {
 }
 
 // Validate only body
-export function validateBody(schema: AnyZodObject) {
+export function validateBody<T>(schema: ZodType<T>) {
   return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     try {
       req.body = await schema.parseAsync(req.body);

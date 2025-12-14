@@ -10,6 +10,7 @@ import {
   setRiskSchema,
   getCasesQuerySchema,
   cancelCaseSchema,
+  GetCasesQuery,
 } from '../modules/case/case.schema';
 import * as caseService from '../modules/case/case.service';
 
@@ -27,6 +28,7 @@ import * as evidenceService from '../modules/evidence/evidence.service';
 import {
   getAccrualsQuerySchema,
   generateInvoiceSchema,
+  GetAccrualsQuery,
 } from '../modules/billing/billing.schema';
 import * as billingService from '../modules/billing/billing.service';
 
@@ -57,7 +59,7 @@ router.get(
     try {
       const cases = await caseService.getOrgCases(
         req.params.orgId,
-        req.query as { status?: string; limit: number; offset: number }
+        req.query as unknown as GetCasesQuery
       );
       res.json({ cases });
     } catch (error) {
@@ -277,7 +279,7 @@ router.get(
     try {
       const accruals = await billingService.getOrgAccruals(
         req.params.orgId,
-        req.query as { period_start?: string; period_end?: string; status?: string; limit: number; offset: number }
+        req.query as unknown as GetAccrualsQuery
       );
       res.json({ accruals });
     } catch (error) {

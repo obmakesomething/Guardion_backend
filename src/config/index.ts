@@ -32,4 +32,4 @@ export const config = {
   accrual: {
     defaultAmount: parseInt(process.env.DEFAULT_ACCRUAL_AMOUNT || '3000', 10),
   },
-} as const;
+};

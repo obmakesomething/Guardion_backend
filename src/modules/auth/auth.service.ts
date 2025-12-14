@@ -30,11 +30,11 @@ function generateTokens(userId: string, role: UserRole): TokenPair {
 
   const access_token = jwt.sign(accessPayload, config.jwt.secret, {
     expiresIn: config.jwt.expiresIn,
-  });
+  } as jwt.SignOptions);
 
   const refresh_token = jwt.sign(refreshPayload, config.jwt.secret, {
     expiresIn: config.jwt.refreshExpiresIn,
-  });
+  } as jwt.SignOptions);
 
   return { access_token, refresh_token };
 }

@@ -83,7 +83,7 @@ async function generateTokensWithSession(
   const accessPayload: JwtPayload = { user_id: userId, role, session_id: sessionId, type: 'access' };
   const access_token = jwt.sign(accessPayload, config.jwt.secret, {
     expiresIn: config.jwt.expiresIn,
-  });
+  } as jwt.SignOptions);
 
   // Refresh token includes session ID for lookup
   const refresh_token = `${sessionId}.${refreshToken}`;
@@ -508,7 +508,7 @@ export async function refreshAccessToken(
 
   const access_token = jwt.sign(accessPayload, config.jwt.secret, {
     expiresIn: config.jwt.expiresIn,
-  });
+  } as jwt.SignOptions);
 
   return { access_token };
 }
