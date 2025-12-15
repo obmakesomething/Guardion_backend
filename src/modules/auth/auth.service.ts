@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { query } from '../../db/pool';
 import { config } from '../../config';
@@ -28,13 +28,13 @@ function generateTokens(userId: string, role: UserRole): TokenPair {
   const accessPayload: JwtPayload = { user_id: userId, role, type: 'access' };
   const refreshPayload: JwtPayload = { user_id: userId, role, type: 'refresh' };
 
+  // Type assertion needed as jsonwebtoken expects StringValue from 'ms' package
   const access_token = jwt.sign(accessPayload, config.jwt.secret, {
     expiresIn: config.jwt.expiresIn,
-  });
-
+  } as SignOptions);
   const refresh_token = jwt.sign(refreshPayload, config.jwt.secret, {
     expiresIn: config.jwt.refreshExpiresIn,
-  });
+  } as SignOptions);
 
   return { access_token, refresh_token };
 }
@@ -125,9 +125,10 @@ export async function login(input: LoginInput): Promise<{ user: User; tokens: To
 }
 
 /**
- * Refresh access token
+ * Refresh access token (legacy - without session tracking)
+ * @deprecated Use oauth.service.refreshAccessToken for session-tracked tokens
  */
-export async function refreshAccessToken(refreshToken: string): Promise<TokenPair> {
+export async function refreshAccessTokenSimple(refreshToken: string): Promise<TokenPair> {
   try {
     const decoded = jwt.verify(refreshToken, config.jwt.secret) as JwtPayload;
 

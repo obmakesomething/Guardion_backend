@@ -10,6 +10,7 @@ import {
   caseIdParamSchema,
   cancelCaseSchema,
   getCasesQuerySchema,
+  GetCasesQuery,
 } from '../modules/case/case.schema';
 import * as caseService from '../modules/case/case.service';
 
@@ -59,10 +60,8 @@ router.get(
   validateQuery(getCasesQuerySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const cases = await caseService.getCustomerCases(
-        req.user!.user_id,
-        req.query as { status?: string; limit: number; offset: number }
-      );
+      const query = req.query as unknown as GetCasesQuery;
+      const cases = await caseService.getCustomerCases(req.user!.user_id, query);
       res.json({ cases });
     } catch (error) {
       next(error);

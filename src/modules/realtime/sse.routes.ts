@@ -39,12 +39,12 @@ router.get(
         // Check org membership if case is assigned to an org
         if (caseData.assigned_org_id) {
           const isMember = user.orgs.some((o) => o.org_id === caseData.assigned_org_id);
-          if (!isMember && user.role !== UserRole.ADMIN) {
+          if (!isMember) {
             throw new ForbiddenError('Cannot access this case');
           }
         }
       }
-      // Admin can access any case
+      // Admin can access any case (handled by not being customer/tech/callcenter)
 
       // Set SSE headers
       res.writeHead(200, {

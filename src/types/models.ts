@@ -25,6 +25,7 @@ export interface User {
   password_hash: string | null;
   phone: string | null;
   phone_verified_at: Date | null;
+  email_verified_at: Date | null;
   display_name: string | null;
   created_at: Date;
   updated_at: Date;

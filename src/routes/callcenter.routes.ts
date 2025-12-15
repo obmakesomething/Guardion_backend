@@ -10,6 +10,7 @@ import {
   setRiskSchema,
   getCasesQuerySchema,
   cancelCaseSchema,
+  GetCasesQuery,
 } from '../modules/case/case.schema';
 import * as caseService from '../modules/case/case.service';
 
@@ -27,6 +28,7 @@ import * as evidenceService from '../modules/evidence/evidence.service';
 import {
   getAccrualsQuerySchema,
   generateInvoiceSchema,
+  GetAccrualsQuery,
 } from '../modules/billing/billing.schema';
 import * as billingService from '../modules/billing/billing.service';
 
@@ -55,10 +57,8 @@ router.get(
   requireOrgMembership((req) => req.params.orgId),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const cases = await caseService.getOrgCases(
-        req.params.orgId,
-        req.query as { status?: string; limit: number; offset: number }
-      );
+      const query = req.query as unknown as GetCasesQuery;
+      const cases = await caseService.getOrgCases(req.params.orgId, query);
       res.json({ cases });
     } catch (error) {
       next(error);
@@ -275,10 +275,8 @@ router.get(
   requireOrgMembership((req) => req.params.orgId),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const accruals = await billingService.getOrgAccruals(
-        req.params.orgId,
-        req.query as { period_start?: string; period_end?: string; status?: string; limit: number; offset: number }
-      );
+      const query = req.query as unknown as GetAccrualsQuery;
+      const accruals = await billingService.getOrgAccruals(req.params.orgId, query);
       res.json({ accruals });
     } catch (error) {
       next(error);

@@ -63,7 +63,7 @@ router.post(
   validateBody(refreshTokenSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const tokens = await authService.refreshAccessToken(req.body.refresh_token);
+      const tokens = await authService.refreshAccessTokenSimple(req.body.refresh_token);
       res.json(tokens);
     } catch (error) {
       next(error);

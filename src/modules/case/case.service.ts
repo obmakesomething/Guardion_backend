@@ -130,7 +130,8 @@ export async function getCaseDetail(
 
   // Calculate ETA if tech is en route
   let etaSeconds: number | null = null;
-  if (caseData.assigned_tech_id && [CaseStatus.EN_ROUTE, CaseStatus.ASSIGNED].includes(caseData.status)) {
+  const etaStatuses: CaseStatus[] = [CaseStatus.EN_ROUTE, CaseStatus.ASSIGNED];
+  if (caseData.assigned_tech_id && etaStatuses.includes(caseData.status)) {
     // Get latest tech location
     const pingResult = await query<{ lat: number; lng: number; ts: Date }>(
       `SELECT lat, lng, ts FROM tech_location_pings

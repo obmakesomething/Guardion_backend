@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash text,
   phone text,
   phone_verified_at timestamptz,
+  email_verified_at timestamptz,
   display_name text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),

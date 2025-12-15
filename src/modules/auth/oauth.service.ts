@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { query, withTransaction } from '../../db/pool';
 import { config } from '../../config';
@@ -81,9 +81,10 @@ async function generateTokensWithSession(
   );
 
   const accessPayload: JwtPayload = { user_id: userId, role, session_id: sessionId, type: 'access' };
+  // Type assertion needed as jsonwebtoken expects StringValue from 'ms' package
   const access_token = jwt.sign(accessPayload, config.jwt.secret, {
     expiresIn: config.jwt.expiresIn,
-  });
+  } as SignOptions);
 
   // Refresh token includes session ID for lookup
   const refresh_token = `${sessionId}.${refreshToken}`;
@@ -506,9 +507,10 @@ export async function refreshAccessToken(
     type: 'access',
   };
 
+  // Type assertion needed as jsonwebtoken expects StringValue from 'ms' package
   const access_token = jwt.sign(accessPayload, config.jwt.secret, {
     expiresIn: config.jwt.expiresIn,
-  });
+  } as SignOptions);
 
   return { access_token };
 }
