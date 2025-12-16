@@ -14,11 +14,21 @@ app.use(helmet({
   contentSecurityPolicy: false, // Disable for SSE
 }));
 
-// CORS
+// CORS - use CORS_ORIGINS env var for allowed origins
+const allowedOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: config.env === 'production'
-    ? ['https://yourproductiondomain.com']
-    : true, // Allow all in development
+  origin: (origin, callback) => {
+    // Allow requests with no origin (server-to-server, health checks)
+    if (!origin) return callback(null, true);
+    // Allow all if no origins configured (development)
+    if (allowedOrigins.length === 0) return callback(null, true);
+    // Check against allowlist
+    return callback(null, allowedOrigins.includes(origin));
+  },
   credentials: true,
 }));
 
@@ -67,8 +77,8 @@ app.use((_req: Request, res: Response) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
-// Start server
-const server = app.listen(config.port, () => {
+// Start server - bind to 0.0.0.0 for Railway/Docker
+const server = app.listen(config.port, '0.0.0.0', () => {
   console.log(`
 ╔═══════════════════════════════════════════════════╗
 ║                                                   ║
@@ -76,8 +86,7 @@ const server = app.listen(config.port, () => {
 ║   Emergency Unlock Ops Platform                   ║
 ║                                                   ║
 ║   Environment: ${config.env.padEnd(32)}║
-║   Port: ${config.port.toString().padEnd(39)}║
-║   API Base: http://localhost:${config.port}/api${' '.repeat(14)}║
+║   Listening:   0.0.0.0:${config.port.toString().padEnd(23)}║
 ║                                                   ║
 ╚═══════════════════════════════════════════════════╝
   `);
