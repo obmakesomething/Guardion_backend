@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenNow AI - 긴급 개문 서비스</title>
+    <style>
+      :root {
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --text: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --radar-color: #3b82f6;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html, body {
+        width: 100%;
+        min-height: 100%;
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      body {
+        padding: 16px;
+      }
+
+      .container {
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        margin-bottom: 16px;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .logo {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+      }
+
+      .header-text h1 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .header-text p {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+      }
+
+      /* Radar Animation */
+      .radar-container {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        margin: 20px auto;
+      }
+
+      .radar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 50%, transparent 70%);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .radar::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.4));
+        transform-origin: left center;
+        animation: radar-sweep 2s infinite linear;
+      }
+
+      @keyframes radar-sweep {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      .radar-rings {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+
+      .radar-ring {
+        position: absolute;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .radar-ring:nth-child(1) { width: 33%; height: 33%; }
+      .radar-ring:nth-child(2) { width: 66%; height: 66%; }
+      .radar-ring:nth-child(3) { width: 100%; height: 100%; }
+
+      .radar-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 16px;
+        height: 16px;
+        background: var(--primary);
+        border-radius: 50%;
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        z-index: 10;
+      }
+
+      .radar-dot {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: var(--success);
+        border-radius: 50%;
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.2); opacity: 0.7; }
+      }
+
+      .radar-label {
+        text-align: center;
+        margin-top: 16px;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+      }
+
+      .radar-label strong {
+        display: block;
+        font-size: 1rem;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+
+      /* Status Badge */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .status-badge.matching {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--primary);
+      }
+
+      .status-badge.matched {
+        background: rgba(34, 197, 94, 0.1);
+        color: var(--success);
+      }
+
+      .status-badge.surcharge {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        animation: blink 1s infinite;
+      }
+
+      .status-dot.matching { background: var(--primary); }
+      .status-dot.matched { background: var(--success); }
+      .status-dot.surcharge { background: var(--warning); }
+
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+
+      /* Quote Card */
+      .quote-card {
+        background: linear-gradient(135deg, #1e3a5f, #2563eb);
+        color: white;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+
+      .quote-label {
+        font-size: 0.875rem;
+        opacity: 0.8;
+        margin-bottom: 4px;
+      }
+
+      .quote-price {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      .quote-details {
+        display: flex;
+        gap: 16px;
+        font-size: 0.875rem;
+        opacity: 0.9;
+      }
+
+      .quote-detail {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      /* Districts List */
+      .districts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 12px 0;
+      }
+
+      .district-tag {
+        padding: 4px 10px;
+        background: var(--bg);
+        border-radius: 12px;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+      .district-tag.active {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--primary);
+        font-weight: 500;
+      }
+
+      /* Surcharge Button */
+      .surcharge-section {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 16px;
+      }
+
+      .surcharge-title {
+        font-weight: 600;
+        color: var(--warning);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .surcharge-text {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+      }
+
+      .surcharge-btn {
+        width: 100%;
+        padding: 12px;
+        background: var(--warning);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .surcharge-btn:hover {
+        background: #d97706;
+      }
+
+      /* Tech Card (when matched) */
+      .tech-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: rgba(34, 197, 94, 0.05);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+        border-radius: 12px;
+        margin-top: 16px;
+      }
+
+      .tech-avatar {
+        width: 56px;
+        height: 56px;
+        background: var(--success);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: white;
+      }
+
+      .tech-info h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .tech-rating {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--warning);
+        font-size: 0.875rem;
+      }
+
+      .tech-eta {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      /* Lock Analysis */
+      .lock-analysis {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .lock-item {
+        padding: 12px;
+        background: var(--bg);
+        border-radius: 10px;
+      }
+
+      .lock-item-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+      }
+
+      .lock-item-value {
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      /* Hidden by default */
+      .hidden {
+        display: none !important;
+      }
+
+      /* Footer */
+      .footer {
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <div class="card">
+        <div class="header">
+          <div class="logo">🔓</div>
+          <div class="header-text">
+            <h1>OpenNow AI</h1>
+            <p>긴급 개문 서비스</p>
+          </div>
+        </div>
+
+        <!-- Status Badge -->
+        <div id="status-container">
+          <span id="status-badge" class="status-badge matching">
+            <span class="status-dot matching"></span>
+            <span id="status-text">대기 중</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Radar Section (visible during matching) -->
+      <div id="radar-section" class="card hidden">
+        <div class="radar-container">
+          <div class="radar">
+            <div class="radar-rings">
+              <div class="radar-ring"></div>
+              <div class="radar-ring"></div>
+              <div class="radar-ring"></div>
+            </div>
+            <div class="radar-center"></div>
+            <!-- Dynamic dots will be added here -->
+          </div>
+        </div>
+        <div class="radar-label">
+          <strong id="radar-level">기사님 찾는 중...</strong>
+          <span id="radar-districts">검색 지역</span>
+        </div>
+
+        <!-- Districts being searched -->
+        <div id="districts-container" class="districts"></div>
+
+        <!-- Notified count -->
+        <p id="notified-count" style="text-align: center; font-size: 0.875rem; color: var(--text-muted); margin-top: 12px;">
+          0명의 기사님께 알림 발송
+        </p>
+      </div>
+
+      <!-- Quote Card -->
+      <div id="quote-section" class="quote-card hidden">
+        <div class="quote-label">예상 비용</div>
+        <div id="quote-price" class="quote-price">₩80,000</div>
+        <div class="quote-details">
+          <div class="quote-detail">
+            <span>🕐</span>
+            <span id="quote-eta">약 15분</span>
+          </div>
+          <div class="quote-detail">
+            <span>📍</span>
+            <span id="quote-district">성동구</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Surcharge Section -->
+      <div id="surcharge-section" class="surcharge-section hidden">
+        <div class="surcharge-title">
+          <span>⚠️</span>
+          <span>광역 매칭 필요</span>
+        </div>
+        <p class="surcharge-text">
+          현재 지역에 가용 기사님이 부족합니다.<br>
+          인접 지역으로 확장하면 더 빠르게 매칭됩니다.
+        </p>
+        <p style="font-weight: 600; margin-bottom: 12px;">
+          추가 비용: <span id="surcharge-amount">+₩5,000</span>
+        </p>
+        <button id="approve-surcharge-btn" class="surcharge-btn" onclick="approveSurcharge()">
+          할증 승인 후 계속하기
+        </button>
+      </div>
+
+      <!-- Lock Analysis Section -->
+      <div id="lock-section" class="card hidden">
+        <h3 style="margin-bottom: 12px; font-size: 1rem;">🔐 도어락 분석 결과</h3>
+        <div class="lock-analysis">
+          <div class="lock-item">
+            <div class="lock-item-label">종류</div>
+            <div id="lock-type" class="lock-item-value">디지털 도어락</div>
+          </div>
+          <div class="lock-item">
+            <div class="lock-item-label">브랜드</div>
+            <div id="lock-brand" class="lock-item-value">-</div>
+          </div>
+          <div class="lock-item">
+            <div class="lock-item-label">난이도</div>
+            <div id="lock-difficulty" class="lock-item-value">보통</div>
+          </div>
+          <div class="lock-item">
+            <div class="lock-item-label">예상 시간</div>
+            <div id="lock-time" class="lock-item-value">약 25분</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Matched Tech Section -->
+      <div id="matched-section" class="card hidden">
+        <h3 style="margin-bottom: 12px; font-size: 1rem; color: var(--success);">✅ 기사님 배정 완료!</h3>
+        <div class="tech-card">
+          <div class="tech-avatar">👨‍🔧</div>
+          <div class="tech-info">
+            <h3 id="tech-name">기사님</h3>
+            <div class="tech-rating">
+              <span>⭐</span>
+              <span id="tech-rating">4.8</span>
+            </div>
+            <div class="tech-eta">🚗 도착 예정: <span id="tech-eta">15분</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        서비스 지역: 성동구, 관악구 (서울 전역 확장 예정)
+      </div>
+    </div>
+
+    <script type="module">
+      // State management
+      let widgetState = window.openai?.toolOutput?.widgetState ?? { status: 'idle' };
+
+      // DOM Elements
+      const statusBadge = document.getElementById('status-badge');
+      const statusText = document.getElementById('status-text');
+      const radarSection = document.getElementById('radar-section');
+      const quoteSection = document.getElementById('quote-section');
+      const surchargeSection = document.getElementById('surcharge-section');
+      const lockSection = document.getElementById('lock-section');
+      const matchedSection = document.getElementById('matched-section');
+
+      // Render function
+      function render() {
+        // Reset all sections
+        radarSection.classList.add('hidden');
+        quoteSection.classList.add('hidden');
+        surchargeSection.classList.add('hidden');
+        lockSection.classList.add('hidden');
+        matchedSection.classList.add('hidden');
+
+        switch (widgetState.status) {
+          case 'idle':
+            statusText.textContent = '대기 중';
+            statusBadge.className = 'status-badge matching';
+            break;
+
+          case 'analyzing':
+            statusText.textContent = '도어락 분석 중...';
+            statusBadge.className = 'status-badge matching';
+            break;
+
+          case 'quoting':
+            statusText.textContent = '견적 산출 중...';
+            statusBadge.className = 'status-badge matching';
+            break;
+
+          case 'matching':
+            statusText.textContent = widgetState.matching?.levelName ?? '기사님 찾는 중...';
+            statusBadge.className = 'status-badge matching';
+            radarSection.classList.remove('hidden');
+            renderRadar();
+            if (widgetState.quote) {
+              quoteSection.classList.remove('hidden');
+              renderQuote();
+            }
+            break;
+
+          case 'surcharge_pending':
+            statusText.textContent = '광역 매칭 대기 중';
+            statusBadge.className = 'status-badge surcharge';
+            surchargeSection.classList.remove('hidden');
+            if (widgetState.quote) {
+              quoteSection.classList.remove('hidden');
+              renderQuote();
+            }
+            if (widgetState.surchargeAmount) {
+              document.getElementById('surcharge-amount').textContent =
+                `+₩${widgetState.surchargeAmount.toLocaleString('ko-KR')}`;
+            }
+            break;
+
+          case 'matched':
+            statusText.textContent = '기사님 배정 완료!';
+            statusBadge.className = 'status-badge matched';
+            matchedSection.classList.remove('hidden');
+            if (widgetState.quote) {
+              quoteSection.classList.remove('hidden');
+              renderQuote();
+            }
+            if (widgetState.matchedTech) {
+              document.getElementById('tech-name').textContent = widgetState.matchedTech.name;
+              document.getElementById('tech-rating').textContent = widgetState.matchedTech.rating;
+              document.getElementById('tech-eta').textContent = `${widgetState.matchedTech.eta}분`;
+            }
+            break;
+        }
+
+        // Show lock analysis if available
+        if (widgetState.lockAnalysis) {
+          lockSection.classList.remove('hidden');
+          document.getElementById('lock-type').textContent = widgetState.lockAnalysis.lockType;
+          document.getElementById('lock-brand').textContent = widgetState.lockAnalysis.brand ?? '-';
+          document.getElementById('lock-difficulty').textContent = widgetState.lockAnalysis.difficulty;
+          document.getElementById('lock-time').textContent = `약 ${widgetState.lockAnalysis.estimatedTime}분`;
+        }
+      }
+
+      function renderRadar() {
+        const matching = widgetState.matching;
+        if (!matching) return;
+
+        document.getElementById('radar-level').textContent = matching.levelName;
+        document.getElementById('radar-districts').textContent =
+          `검색 지역: ${matching.searchingDistricts.join(', ')}`;
+        document.getElementById('notified-count').textContent =
+          `${matching.notifiedCount}명의 기사님께 알림 발송`;
+
+        // Update district tags
+        const container = document.getElementById('districts-container');
+        container.innerHTML = matching.searchingDistricts
+          .map(d => `<span class="district-tag active">${d}</span>`)
+          .join('');
+      }
+
+      function renderQuote() {
+        const quote = widgetState.quote;
+        if (!quote) return;
+
+        document.getElementById('quote-price').textContent =
+          `₩${quote.totalPrice.toLocaleString('ko-KR')}`;
+        document.getElementById('quote-eta').textContent =
+          `약 ${quote.estimatedArrival}분`;
+      }
+
+      // Surcharge approval
+      window.approveSurcharge = async function() {
+        if (!widgetState.requestId) {
+          console.error('No request ID available');
+          return;
+        }
+
+        if (window.openai?.callTool) {
+          const response = await window.openai.callTool('approve_surcharge', {
+            requestId: widgetState.requestId
+          });
+          if (response?.structuredContent?.widgetState) {
+            widgetState = response.structuredContent.widgetState;
+            render();
+          }
+        }
+      };
+
+      // Handle globals update from ChatGPT
+      window.addEventListener('openai:set_globals', (event) => {
+        const globals = event.detail?.globals;
+        if (globals?.toolOutput?.widgetState) {
+          widgetState = globals.toolOutput.widgetState;
+          render();
+        }
+      }, { passive: true });
+
+      // Initial render
+      render();
+    </script>
+  </body>
+</html>

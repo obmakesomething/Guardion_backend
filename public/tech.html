@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenNow AI - 기사님 전용</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 16px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .logo {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      color: var(--text-muted);
+    }
+
+    .job-card {
+      border: 2px solid var(--primary);
+      position: relative;
+    }
+
+    .job-card::before {
+      content: '긴급';
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: var(--danger);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .job-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      padding-top: 8px;
+    }
+
+    .job-district {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .job-time {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .job-price {
+      text-align: right;
+    }
+
+    .job-price-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .job-price-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--success);
+    }
+
+    .job-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .job-detail {
+      background: var(--bg);
+      padding: 12px;
+      border-radius: 10px;
+    }
+
+    .job-detail-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .job-detail-value {
+      font-weight: 500;
+    }
+
+    .competitor-warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      text-align: center;
+      font-size: 0.875rem;
+    }
+
+    .competitor-warning strong {
+      color: var(--warning);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-accept {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-decline {
+      background: var(--bg);
+      color: var(--text-muted);
+      border: 1px solid var(--text-muted);
+    }
+
+    /* Balance Input Section */
+    .balance-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--bg);
+    }
+
+    .balance-section h3 {
+      margin-bottom: 12px;
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .quick-amounts {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .quick-amount {
+      padding: 8px 16px;
+      background: var(--bg);
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+
+    .quick-amount:hover {
+      border-color: var(--primary);
+      background: rgba(37, 99, 235, 0.05);
+    }
+
+    .btn-submit-balance {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Photo Upload */
+    .photo-upload {
+      margin-bottom: 16px;
+    }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .photo-item {
+      aspect-ratio: 1;
+      background: var(--bg);
+      border: 2px dashed #e2e8f0;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 24px;
+      color: var(--text-muted);
+    }
+
+    .photo-item.uploaded {
+      border-style: solid;
+      border-color: var(--success);
+    }
+
+    /* Status Messages */
+    .status-message {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .status-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .status-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .status-text {
+      color: var(--text-muted);
+    }
+
+    /* Hidden sections */
+    .hidden {
+      display: none;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">🔓</div>
+      <h1>OpenNow AI</h1>
+      <p>기사님 전용 페이지</p>
+    </div>
+
+    <!-- Job Offer Section -->
+    <div id="job-offer-section" class="card job-card">
+      <div class="job-header">
+        <div>
+          <div class="job-district" id="job-district">성동구</div>
+          <div class="job-time" id="job-time">방금 전 요청</div>
+        </div>
+        <div class="job-price">
+          <div class="job-price-label">확정 배정금</div>
+          <div class="job-price-value">₩30,000</div>
+        </div>
+      </div>
+
+      <div class="job-details">
+        <div class="job-detail">
+          <div class="job-detail-label">도어락 종류</div>
+          <div class="job-detail-value" id="job-lock-type">디지털 도어락</div>
+        </div>
+        <div class="job-detail">
+          <div class="job-detail-label">예상 작업비 (잔금)</div>
+          <div class="job-detail-value" id="job-balance-range">₩50,000~80,000</div>
+        </div>
+      </div>
+
+      <div class="competitor-warning">
+        <strong>⚡ 현재 <span id="competitor-count">5</span>명</strong>의 기사님께 동시 제안 중!<br>
+        먼저 수락하시는 분께 배정됩니다.
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-decline" onclick="declineJob()">거절</button>
+        <button class="btn btn-accept" onclick="acceptJob()">수락하기</button>
+      </div>
+    </div>
+
+    <!-- Accepted Section (hidden initially) -->
+    <div id="accepted-section" class="card hidden">
+      <div class="status-message">
+        <div class="status-icon">✅</div>
+        <div class="status-title">수락 완료!</div>
+        <div class="status-text">고객님께 연락드리겠습니다.</div>
+      </div>
+
+      <div class="job-details" style="margin-top: 20px;">
+        <div class="job-detail">
+          <div class="job-detail-label">고객 연락처</div>
+          <div class="job-detail-value" id="customer-phone">010-****-1234</div>
+        </div>
+        <div class="job-detail">
+          <div class="job-detail-label">주소</div>
+          <div class="job-detail-value" id="customer-address">서울시 성동구 ***</div>
+        </div>
+      </div>
+
+      <button class="btn btn-accept" onclick="showBalanceSection()" style="width: 100%; margin-top: 16px;">
+        작업 완료 후 잔금 입력
+      </button>
+    </div>
+
+    <!-- Balance Input Section (hidden initially) -->
+    <div id="balance-section" class="card hidden">
+      <h3>💰 잔금 입력</h3>
+      <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 16px;">
+        작업 완료 후 고객님께 청구할 잔금을 입력해주세요.
+      </p>
+
+      <div class="photo-upload">
+        <label style="font-size: 0.875rem; color: var(--text-muted);">📷 작업 완료 사진 (필수)</label>
+        <div class="photo-grid">
+          <div class="photo-item" onclick="uploadPhoto(0)">+</div>
+          <div class="photo-item" onclick="uploadPhoto(1)">+</div>
+          <div class="photo-item" onclick="uploadPhoto(2)">+</div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>잔금 금액 (원)</label>
+        <input type="number" id="balance-input" placeholder="예: 70000" />
+      </div>
+
+      <div class="quick-amounts">
+        <span class="quick-amount" onclick="setBalance(50000)">₩50,000</span>
+        <span class="quick-amount" onclick="setBalance(60000)">₩60,000</span>
+        <span class="quick-amount" onclick="setBalance(70000)">₩70,000</span>
+        <span class="quick-amount" onclick="setBalance(80000)">₩80,000</span>
+        <span class="quick-amount" onclick="setBalance(100000)">₩100,000</span>
+      </div>
+
+      <button class="btn btn-submit-balance" onclick="submitBalance()">
+        잔금 청구하기
+      </button>
+    </div>
+
+    <!-- Completed Section (hidden initially) -->
+    <div id="completed-section" class="card hidden">
+      <div class="status-message">
+        <div class="status-icon">🎉</div>
+        <div class="status-title">작업 완료!</div>
+        <div class="status-text">
+          고객님께 잔금 결제 요청이 전송되었습니다.<br>
+          결제 완료 시 정산이 진행됩니다.
+        </div>
+      </div>
+
+      <div class="job-details" style="margin-top: 20px;">
+        <div class="job-detail">
+          <div class="job-detail-label">배정금</div>
+          <div class="job-detail-value">₩30,000</div>
+        </div>
+        <div class="job-detail">
+          <div class="job-detail-label">청구 잔금</div>
+          <div class="job-detail-value" id="submitted-balance">₩70,000</div>
+        </div>
+        <div class="job-detail" style="grid-column: span 2;">
+          <div class="job-detail-label">예상 정산액 (수수료 차감 후)</div>
+          <div class="job-detail-value" id="estimated-settlement" style="color: var(--success); font-size: 1.25rem;">₩93,000</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Declined Section (hidden initially) -->
+    <div id="declined-section" class="card hidden">
+      <div class="status-message">
+        <div class="status-icon">👋</div>
+        <div class="status-title">거절됨</div>
+        <div class="status-text">다음 기회에 뵙겠습니다!</div>
+      </div>
+    </div>
+
+    <!-- Already Taken Section (hidden initially) -->
+    <div id="taken-section" class="card hidden">
+      <div class="status-message">
+        <div class="status-icon">😔</div>
+        <div class="status-title">이미 다른 기사님이 수락했습니다</div>
+        <div class="status-text">다음 요청을 기다려주세요!</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      OpenNow AI &copy; 2024<br>
+      문의: support@opennow.ai
+    </div>
+  </div>
+
+  <script>
+    // Parse URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const requestId = urlParams.get('request') || urlParams.get('requestId');
+    const techId = urlParams.get('tech') || urlParams.get('techId');
+
+    // Mock data - in production, this would come from API
+    const jobData = {
+      district: urlParams.get('district') || '성동구',
+      lockType: urlParams.get('lockType') || '디지털 도어락',
+      balanceRange: '₩50,000~80,000',
+      competitorCount: urlParams.get('count') || 5,
+      calloutShare: 30000,
+    };
+
+    // Initialize page
+    document.getElementById('job-district').textContent = jobData.district;
+    document.getElementById('job-lock-type').textContent = jobData.lockType;
+    document.getElementById('job-balance-range').textContent = jobData.balanceRange;
+    document.getElementById('competitor-count').textContent = jobData.competitorCount;
+
+    function hideAllSections() {
+      document.getElementById('job-offer-section').classList.add('hidden');
+      document.getElementById('accepted-section').classList.add('hidden');
+      document.getElementById('balance-section').classList.add('hidden');
+      document.getElementById('completed-section').classList.add('hidden');
+      document.getElementById('declined-section').classList.add('hidden');
+      document.getElementById('taken-section').classList.add('hidden');
+    }
+
+    async function acceptJob() {
+      // In production, call API to accept the job
+      console.log('Accepting job:', { requestId, techId });
+
+      // Simulate API call
+      try {
+        // const response = await fetch(`/api/tech/accept`, {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({ requestId, techId })
+        // });
+        // const data = await response.json();
+
+        // Mock success
+        hideAllSections();
+        document.getElementById('accepted-section').classList.remove('hidden');
+      } catch (error) {
+        // Handle case where job was already taken
+        hideAllSections();
+        document.getElementById('taken-section').classList.remove('hidden');
+      }
+    }
+
+    function declineJob() {
+      console.log('Declining job:', { requestId, techId });
+      hideAllSections();
+      document.getElementById('declined-section').classList.remove('hidden');
+    }
+
+    function showBalanceSection() {
+      hideAllSections();
+      document.getElementById('balance-section').classList.remove('hidden');
+    }
+
+    function setBalance(amount) {
+      document.getElementById('balance-input').value = amount;
+    }
+
+    function uploadPhoto(index) {
+      // In production, implement photo upload
+      const items = document.querySelectorAll('.photo-item');
+      items[index].textContent = '✓';
+      items[index].classList.add('uploaded');
+    }
+
+    async function submitBalance() {
+      const balanceAmount = parseInt(document.getElementById('balance-input').value, 10);
+
+      if (!balanceAmount || balanceAmount < 10000) {
+        alert('올바른 금액을 입력해주세요.');
+        return;
+      }
+
+      // In production, call API to submit balance
+      console.log('Submitting balance:', { requestId, techId, balanceAmount });
+
+      // Calculate settlement (balance - 10% platform fee + callout share)
+      const platformFee = Math.round(balanceAmount * 0.1);
+      const balanceShare = balanceAmount - platformFee;
+      const totalSettlement = jobData.calloutShare + balanceShare;
+
+      document.getElementById('submitted-balance').textContent = `₩${balanceAmount.toLocaleString('ko-KR')}`;
+      document.getElementById('estimated-settlement').textContent = `₩${totalSettlement.toLocaleString('ko-KR')}`;
+
+      hideAllSections();
+      document.getElementById('completed-section').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

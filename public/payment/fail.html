@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>결제 실패 - OpenNow AI</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 40px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      color: #1e293b;
+    }
+    p {
+      color: #64748b;
+      margin-bottom: 24px;
+    }
+    .error-code {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.875rem;
+      color: #dc2626;
+      margin-bottom: 24px;
+    }
+    .btn {
+      display: inline-block;
+      background: #2563eb;
+      color: white;
+      padding: 14px 32px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: background 0.2s;
+      margin-right: 8px;
+    }
+    .btn:hover {
+      background: #1d4ed8;
+    }
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #475569;
+    }
+    .btn-secondary:hover {
+      background: #cbd5e1;
+    }
+    .footer {
+      margin-top: 24px;
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">✕</div>
+    <h1>결제에 실패했습니다</h1>
+    <p>결제 처리 중 문제가 발생했습니다.<br>다시 시도해 주세요.</p>
+
+    <div class="error-code" id="error-message">
+      오류: 결제가 취소되었습니다
+    </div>
+
+    <div>
+      <a href="javascript:history.back()" class="btn">다시 시도</a>
+      <a href="https://chat.openai.com" class="btn btn-secondary">ChatGPT로 돌아가기</a>
+    </div>
+
+    <div class="footer">
+      결제 문의: support@opennow.ai<br>
+      고객센터: 02-1234-5678
+    </div>
+  </div>
+
+  <script>
+    // Parse error info from URL
+    const params = new URLSearchParams(window.location.search);
+    const errorCode = params.get('code');
+    const errorMessage = params.get('message');
+
+    if (errorMessage) {
+      document.getElementById('error-message').textContent = `오류: ${decodeURIComponent(errorMessage)}`;
+    } else if (errorCode) {
+      document.getElementById('error-message').textContent = `오류 코드: ${errorCode}`;
+    }
+  </script>
+</body>
+</html>

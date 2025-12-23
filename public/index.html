@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenNow AI - 긴급 개문 서비스</title>
+  <meta name="description" content="24시간 긴급 개문 서비스. AI 기반 빠른 기사님 매칭, 투명한 가격.">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+      color: white;
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .hero-logo {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 {
+      font-size: 2.5rem;
+      margin-bottom: 8px;
+    }
+
+    .hero p {
+      font-size: 1.125rem;
+      opacity: 0.9;
+      margin-bottom: 24px;
+    }
+
+    .hero-cta {
+      display: inline-block;
+      background: white;
+      color: var(--primary);
+      padding: 16px 32px;
+      border-radius: 30px;
+      font-size: 1.125rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.2s;
+    }
+
+    .hero-cta:hover {
+      transform: scale(1.05);
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      margin-top: 16px;
+    }
+
+    /* Features */
+    .features {
+      padding: 60px 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .features h2 {
+      text-align: center;
+      font-size: 1.75rem;
+      margin-bottom: 40px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .feature-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .feature-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .feature-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    /* Pricing */
+    .pricing {
+      background: white;
+      padding: 60px 20px;
+    }
+
+    .pricing h2 {
+      text-align: center;
+      font-size: 1.75rem;
+      margin-bottom: 40px;
+    }
+
+    .pricing-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: var(--bg);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+
+    .pricing-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .pricing-label {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .pricing-amount {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .pricing-desc {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-bottom: 16px;
+    }
+
+    .pricing-breakdown {
+      display: flex;
+      gap: 24px;
+      font-size: 0.875rem;
+    }
+
+    .pricing-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* How it works */
+    .how-it-works {
+      padding: 60px 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .how-it-works h2 {
+      text-align: center;
+      font-size: 1.75rem;
+      margin-bottom: 40px;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .step {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .step-number {
+      width: 48px;
+      height: 48px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .step-content h3 {
+      font-size: 1.125rem;
+      margin-bottom: 4px;
+    }
+
+    .step-content p {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    /* Service Area */
+    .service-area {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+      color: white;
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .service-area h2 {
+      font-size: 1.75rem;
+      margin-bottom: 16px;
+    }
+
+    .service-area p {
+      opacity: 0.9;
+      margin-bottom: 24px;
+    }
+
+    .districts {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .district-tag {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.875rem;
+    }
+
+    .district-tag.active {
+      background: white;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* CTA Section */
+    .cta {
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .cta h2 {
+      font-size: 1.75rem;
+      margin-bottom: 16px;
+    }
+
+    .cta p {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      padding: 16px 48px;
+      border-radius: 30px;
+      font-size: 1.125rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .cta-button:hover {
+      background: var(--primary-dark);
+    }
+
+    /* Footer */
+    .footer {
+      background: #1e293b;
+      color: white;
+      padding: 40px 20px;
+    }
+
+    .footer-content {
+      max-width: 800px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 40px;
+    }
+
+    .footer-section h4 {
+      margin-bottom: 16px;
+      font-size: 1rem;
+    }
+
+    .footer-section p,
+    .footer-section a {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.875rem;
+      line-height: 1.8;
+      text-decoration: none;
+      display: block;
+    }
+
+    .footer-section a:hover {
+      color: white;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.75rem;
+    }
+
+    /* ChatGPT badge */
+    .chatgpt-badge {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #10a37f;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 30px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.2s;
+    }
+
+    .chatgpt-badge:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-logo">🔓</div>
+    <h1>OpenNow AI</h1>
+    <p>24시간 긴급 개문 서비스<br>AI가 가장 가까운 기사님을 찾아드립니다</p>
+    <a href="https://chat.openai.com" class="hero-cta">ChatGPT에서 시작하기</a>
+    <div class="hero-badge">⚡ 평균 매칭 시간 2분</div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <h2>왜 OpenNow AI인가요?</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <div class="feature-title">AI 기반 매칭</div>
+        <div class="feature-desc">도어락 사진만 보내면 AI가 모델을 분석하고 최적의 기사님을 찾아드립니다</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💰</div>
+        <div class="feature-title">투명한 가격</div>
+        <div class="feature-desc">출장비 35,000원 고정. 잔금은 작업 후 확인하고 결제합니다</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">빠른 매칭</div>
+        <div class="feature-desc">서울 전역 숙련된 기사님 네트워크로 평균 2분 내 매칭</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <div class="feature-title">실시간 추적</div>
+        <div class="feature-desc">기사님 위치와 도착 예정 시간을 실시간으로 확인하세요</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="pricing">
+    <h2>투명한 요금 안내</h2>
+    <div class="pricing-container">
+      <div class="pricing-card">
+        <div class="pricing-header">
+          <span class="pricing-label">출장비 (선결제)</span>
+          <span class="pricing-amount">₩35,000</span>
+        </div>
+        <p class="pricing-desc">기사님 호출 시 결제되는 고정 금액입니다. 노쇼 방지를 위해 선결제됩니다.</p>
+        <div class="pricing-breakdown">
+          <div class="pricing-item">✓ 기사님 배정 보장</div>
+          <div class="pricing-item">✓ 현장 출동비 포함</div>
+        </div>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-header">
+          <span class="pricing-label">작업비 (후결제)</span>
+          <span class="pricing-amount">₩50,000~</span>
+        </div>
+        <p class="pricing-desc">현장 작업 난이도에 따라 기사님이 책정합니다. 작업 완료 후 결제합니다.</p>
+        <div class="pricing-breakdown">
+          <div class="pricing-item">✓ 작업 완료 확인 후 결제</div>
+          <div class="pricing-item">✓ 카드 결제 가능</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="how-it-works">
+    <h2>이용 방법</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h3>ChatGPT에서 상황 설명</h3>
+          <p>"성동구에서 문이 잠겼어요" 또는 도어락 사진을 보내주세요</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h3>AI 분석 & 견적 확인</h3>
+          <p>도어락 모델을 분석하고 예상 잔금 범위를 안내해드립니다</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h3>출장비 결제 & 기사님 매칭</h3>
+          <p>35,000원 결제 후 즉시 가까운 기사님을 찾아 알림을 보냅니다</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h3>작업 완료 & 잔금 결제</h3>
+          <p>기사님이 작업을 완료하면 잔금을 확인하고 결제합니다</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Service Area -->
+  <section class="service-area">
+    <h2>서비스 지역</h2>
+    <p>현재 서울시 일부 지역에서 서비스 중입니다</p>
+    <div class="districts">
+      <span class="district-tag active">성동구</span>
+      <span class="district-tag active">관악구</span>
+      <span class="district-tag">강남구 (예정)</span>
+      <span class="district-tag">서초구 (예정)</span>
+      <span class="district-tag">송파구 (예정)</span>
+      <span class="district-tag">마포구 (예정)</span>
+      <span class="district-tag">용산구 (예정)</span>
+      <span class="district-tag">서울 전역 확장 예정</span>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <h2>지금 바로 시작하세요</h2>
+    <p>문이 잠겼을 때, ChatGPT에게 말하세요</p>
+    <a href="https://chat.openai.com" class="cta-button">ChatGPT로 이동</a>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>OpenNow AI</h4>
+        <p>AI 기반 긴급 개문 서비스<br>서울특별시</p>
+      </div>
+      <div class="footer-section">
+        <h4>고객 지원</h4>
+        <a href="mailto:support@opennow.ai">support@opennow.ai</a>
+        <a href="tel:02-1234-5678">02-1234-5678</a>
+      </div>
+      <div class="footer-section">
+        <h4>정책</h4>
+        <a href="/terms">이용약관</a>
+        <a href="/privacy">개인정보처리방침</a>
+        <a href="/refund">환불 정책</a>
+      </div>
+      <div class="footer-section">
+        <h4>기사님 모집</h4>
+        <a href="/tech/register">기사님 등록하기</a>
+        <a href="/tech/guide">기사님 가이드</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2024 OpenNow AI. All rights reserved.
+    </div>
+  </footer>
+
+  <!-- ChatGPT Badge -->
+  <a href="https://chat.openai.com" class="chatgpt-badge">
+    <span>💬</span>
+    ChatGPT에서 이용하기
+  </a>
+</body>
+</html>
