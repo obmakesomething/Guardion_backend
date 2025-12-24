@@ -90,7 +90,7 @@ const requestSmartMatchSchema = {
   phone: z.string().describe('연락받을 전화번호'),
   lockType: z.enum(['digital', 'mechanical', 'smart', 'padlock', 'unknown']).default('digital'),
   difficulty: z.enum(['easy', 'medium', 'hard', 'expert']).default('medium'),
-  lockPhotoUrl: z.string().optional().describe('도어락 사진 URL (선택)'),
+  lockPhotoUrl: z.string().describe('도어락 사진 URL'),
   userId: z.string().optional(),
 };
 
@@ -324,12 +324,13 @@ function createklygoServer() {
       }
 
       // Validate required customer info
-      if (!args.phone || !args.address) {
+      if (!args.phone || !args.address || !args.lockPhotoUrl) {
         return buildWidgetResponse(
-          `📞 연락처와 주소가 필요합니다.\n\n` +
-          `기사님을 호출하려면 다음 정보를 알려주세요:\n` +
+          `📞 기사님 호출에 필요한 정보가 부족합니다.\n\n` +
+          `다음 정보를 모두 알려주세요:\n` +
           `• 연락받을 전화번호\n` +
-          `• 상세 주소 (동/호수 포함)`
+          `• 상세 주소 (동/호수 포함)\n` +
+          `• 도어락 사진 (업로드해주세요)`
         );
       }
 
