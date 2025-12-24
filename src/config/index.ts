@@ -36,12 +36,16 @@ export const config = {
   pricing: {
     // 선결제 출장비
     calloutFee: Number(process.env.CALLOUT_FEE ?? 35000),
+    // 기본 출장비 (= calloutFee, 호환성용)
+    basePrice: Number(process.env.CALLOUT_FEE ?? 35000),
     // 플랫폼 수익 (출장비에서)
     platformFeeFromCallout: Number(process.env.PLATFORM_FEE_CALLOUT ?? 5000),
     // 기사님 배정액
     techCalloutShare: Number(process.env.TECH_CALLOUT_SHARE ?? 30000),
     // 광역 매칭 할증
     wideAreaSurcharge: Number(process.env.WIDE_AREA_SURCHARGE ?? 5000),
+    // 할증 금액 (= wideAreaSurcharge, 호환성용)
+    surchargeAmount: Number(process.env.WIDE_AREA_SURCHARGE ?? 5000),
     // 잔금 수수료율 (10-15%)
     balanceFeeRate: Number(process.env.BALANCE_FEE_RATE ?? 0.1),
   },

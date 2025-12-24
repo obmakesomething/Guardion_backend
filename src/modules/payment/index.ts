@@ -236,7 +236,7 @@ export async function confirmTossPayment(
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json() as { message?: string };
       console.error('[Payment] Toss confirm failed:', errorData);
       paymentRequest.status = 'failed';
       paymentRequests.set(paymentRequest.id, paymentRequest);
