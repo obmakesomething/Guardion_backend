@@ -152,10 +152,14 @@ export const TEMPLATE_IDS = {
   WIDE_AREA_REQUEST: 'KA01PF241223000002',
   // 고객님께 기사 배정 완료 알림
   TECH_ASSIGNED: 'KA01PF241223000003',
+  // 고객님께 기사 출발 알림
+  TECH_DEPARTED: 'KA01PF241223000004',
   // 고객님께 기사 도착 예정 알림
-  TECH_ARRIVING: 'KA01PF241223000004',
-  // 작업 완료 알림
-  JOB_COMPLETED: 'KA01PF241223000005',
+  TECH_ARRIVING: 'KA01PF241223000005',
+  // 고객님께 작업 완료 + 잔금 결제 알림
+  JOB_COMPLETED: 'KA01PF241223000006',
+  // 고객님께 잔금 결제 요청 알림
+  BALANCE_REQUEST: 'KA01PF241223000007',
 } as const;
 
 /**
@@ -177,4 +181,120 @@ export function buildTechNotificationVariables(params: {
     '#{수락링크}': params.acceptUrl,
     '#{경쟁자수}': String(params.competitorCount),
   };
+}
+
+/**
+ * Build notification for customer - tech assigned
+ */
+export function buildCustomerTechAssignedVariables(params: {
+  techName: string;
+  techPhone: string;
+  eta: number;
+}): Record<string, string> {
+  return {
+    '#{기사님이름}': params.techName,
+    '#{기사님연락처}': params.techPhone,
+    '#{예상도착시간}': `${params.eta}분`,
+  };
+}
+
+/**
+ * Build notification for customer - tech departed
+ */
+export function buildCustomerTechDepartedVariables(params: {
+  techName: string;
+  eta: number;
+}): Record<string, string> {
+  return {
+    '#{기사님이름}': params.techName,
+    '#{예상도착시간}': `${params.eta}분`,
+  };
+}
+
+/**
+ * Build notification for customer - tech arriving
+ */
+export function buildCustomerTechArrivingVariables(params: {
+  techName: string;
+}): Record<string, string> {
+  return {
+    '#{기사님이름}': params.techName,
+  };
+}
+
+/**
+ * Build notification for customer - balance payment request
+ */
+export function buildCustomerBalanceRequestVariables(params: {
+  amount: number;
+  paymentUrl: string;
+}): Record<string, string> {
+  return {
+    '#{잔금금액}': params.amount.toLocaleString('ko-KR'),
+    '#{결제링크}': params.paymentUrl,
+  };
+}
+
+/**
+ * Send customer notification - tech assigned
+ */
+export async function notifyCustomerTechAssigned(
+  customerPhone: string,
+  techName: string,
+  techPhone: string,
+  eta: number = 15
+): Promise<boolean> {
+  const result = await sendKakaoAlimtalk(
+    customerPhone,
+    TEMPLATE_IDS.TECH_ASSIGNED,
+    buildCustomerTechAssignedVariables({ techName, techPhone, eta })
+  );
+  return result !== null;
+}
+
+/**
+ * Send customer notification - tech departed
+ */
+export async function notifyCustomerTechDeparted(
+  customerPhone: string,
+  techName: string,
+  eta: number = 10
+): Promise<boolean> {
+  const result = await sendKakaoAlimtalk(
+    customerPhone,
+    TEMPLATE_IDS.TECH_DEPARTED,
+    buildCustomerTechDepartedVariables({ techName, eta })
+  );
+  return result !== null;
+}
+
+/**
+ * Send customer notification - tech arriving (almost there)
+ */
+export async function notifyCustomerTechArriving(
+  customerPhone: string,
+  techName: string
+): Promise<boolean> {
+  const result = await sendKakaoAlimtalk(
+    customerPhone,
+    TEMPLATE_IDS.TECH_ARRIVING,
+    buildCustomerTechArrivingVariables({ techName })
+  );
+  return result !== null;
+}
+
+/**
+ * Send customer notification - balance payment request
+ */
+export async function notifyCustomerBalanceRequest(
+  customerPhone: string,
+  amount: number,
+  paymentUrl: string
+): Promise<boolean> {
+  const result = await sendKakaoAlimtalk(
+    customerPhone,
+    TEMPLATE_IDS.BALANCE_REQUEST,
+    buildCustomerBalanceRequestVariables({ amount, paymentUrl })
+  );
+  return result !== null;
 }

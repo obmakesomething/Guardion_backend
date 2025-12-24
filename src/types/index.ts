@@ -90,6 +90,28 @@ export interface Technician {
   lastActiveAt: Date;
 }
 
+// Customer info
+export interface CustomerInfo {
+  phone: string;
+  address: string;
+  addressDetail?: string;
+  latitude?: number;
+  longitude?: number;
+  lockPhotoUrl?: string;
+}
+
+// Job status (after matching)
+export type JobStatus =
+  | 'pending'      // 대기 중
+  | 'matching'     // 매칭 중
+  | 'matched'      // 매칭 완료
+  | 'departed'     // 기사님 출발
+  | 'arrived'      // 기사님 도착
+  | 'working'      // 작업 중
+  | 'completed'    // 작업 완료
+  | 'cancelled'    // 취소됨
+  | 'expired';     // 만료됨
+
 // Matching request
 export interface MatchRequest {
   id: string;
@@ -100,11 +122,19 @@ export interface MatchRequest {
   surchargeApproved: boolean;
   surchargeAmount: number;
   currentLevel: 1 | 2 | 3;
-  status: 'pending' | 'matching' | 'matched' | 'cancelled' | 'expired';
+  status: JobStatus;
   matchedTechId: string | null;
+  matchedTech?: Technician | null;
   notifiedTechIds: string[];
   createdAt: Date;
   expiresAt: Date | null;
+  // Customer info
+  customer?: CustomerInfo;
+  // Timestamps
+  matchedAt?: Date;
+  departedAt?: Date;
+  arrivedAt?: Date;
+  completedAt?: Date;
 }
 
 // Quote calculation

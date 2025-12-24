@@ -5,6 +5,10 @@ import {
   sendBatchKakaoAlimtalk,
   TEMPLATE_IDS,
   buildTechNotificationVariables,
+  notifyCustomerTechAssigned,
+  notifyCustomerTechDeparted,
+  notifyCustomerTechArriving,
+  notifyCustomerBalanceRequest,
 } from '../solapi/index.js';
 import {
   type SeoulDistrict,
@@ -12,6 +16,8 @@ import {
   type MatchRequest,
   type MatchingStatus,
   type LockAnalysisResult,
+  type CustomerInfo,
+  type JobStatus,
   DISTRICT_NAMES,
   ADJACENT_DISTRICTS,
 } from '../../types/index.js';
@@ -95,6 +101,7 @@ export async function createMatchRequest(params: {
   district: SeoulDistrict;
   lockAnalysis?: LockAnalysisResult;
   basePrice: number;
+  customer?: CustomerInfo;
 }): Promise<MatchRequest> {
   const id = uuid();
   const now = new Date();
@@ -110,21 +117,51 @@ export async function createMatchRequest(params: {
     currentLevel: 1,
     status: 'pending',
     matchedTechId: null,
+    matchedTech: null,
     notifiedTechIds: [],
     createdAt: now,
     expiresAt: null,
+    customer: params.customer,
   };
 
   activeMatches.set(id, matchRequest);
 
   // Log to database (async, don't await)
   query(
-    `INSERT INTO match_requests (id, district, base_price, status, created_at)
-     VALUES ($1, $2, $3, $4, $5)`,
-    [id, params.district, params.basePrice, 'pending', now]
+    `INSERT INTO match_requests (id, district, base_price, status, created_at, customer_phone, customer_address)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [id, params.district, params.basePrice, 'pending', now, params.customer?.phone, params.customer?.address]
   ).catch((err) => console.error('[Matching] Failed to log match request:', err));
 
   return matchRequest;
+}
+
+/**
+ * Update customer info for a match request
+ */
+export function updateCustomerInfo(requestId: string, customer: CustomerInfo): boolean {
+  const request = activeMatches.get(requestId);
+  if (!request) {
+    return false;
+  }
+
+  request.customer = customer;
+  activeMatches.set(requestId, request);
+
+  // Update database (async)
+  query(
+    `UPDATE match_requests SET customer_phone = $1, customer_address = $2 WHERE id = $3`,
+    [customer.phone, customer.address, requestId]
+  ).catch((err) => console.error('[Matching] Failed to update customer info:', err));
+
+  return true;
+}
+
+/**
+ * Get a match request by ID
+ */
+export function getMatchRequest(requestId: string): MatchRequest | null {
+  return activeMatches.get(requestId) ?? null;
 }
 
 /**
@@ -310,19 +347,48 @@ export function approveSurcharge(requestId: string): boolean {
 export async function acceptMatch(
   requestId: string,
   techId: string
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string; customer?: CustomerInfo }> {
   const request = activeMatches.get(requestId);
   if (!request) {
     return { success: false, message: '요청을 찾을 수 없습니다.' };
   }
 
-  if (request.status === 'matched') {
+  if (request.status === 'matched' || request.status === 'departed' ||
+      request.status === 'arrived' || request.status === 'completed') {
     return { success: false, message: '이미 다른 기사님이 수락하셨습니다.' };
+  }
+
+  // Get tech info
+  let techInfo: Technician | null = null;
+  try {
+    const result = await query<{
+      id: string; name: string; phone: string; district: SeoulDistrict; rating: number;
+    }>(
+      `SELECT id, name, phone, district, rating FROM technicians WHERE id = $1`,
+      [techId]
+    );
+    if (result.rows[0]) {
+      techInfo = {
+        id: result.rows[0].id,
+        name: result.rows[0].name,
+        phone: result.rows[0].phone,
+        district: result.rows[0].district,
+        rating: Number(result.rows[0].rating),
+        completedJobs: 0,
+        isAvailable: true,
+        specialties: [],
+        lastActiveAt: new Date(),
+      };
+    }
+  } catch (err) {
+    console.error('[Matching] Failed to get tech info:', err);
   }
 
   // Update request
   request.status = 'matched';
   request.matchedTechId = techId;
+  request.matchedTech = techInfo;
+  request.matchedAt = new Date();
   activeMatches.set(requestId, request);
 
   // Update database
@@ -331,7 +397,137 @@ export async function acceptMatch(
     [techId, requestId]
   );
 
-  return { success: true, message: '수락 완료! 고객님께 연락드리겠습니다.' };
+  // Notify customer via Kakao
+  if (request.customer?.phone && techInfo) {
+    notifyCustomerTechAssigned(
+      request.customer.phone,
+      techInfo.name,
+      techInfo.phone,
+      15 // ETA 15 minutes
+    ).catch(err => console.error('[Matching] Failed to notify customer:', err));
+  }
+
+  return {
+    success: true,
+    message: '수락 완료! 고객님께 연락드리겠습니다.',
+    customer: request.customer
+  };
+}
+
+/**
+ * Update job status - tech departed
+ */
+export async function updateJobDeparted(
+  requestId: string,
+  techId: string,
+  eta: number = 10
+): Promise<{ success: boolean; message: string }> {
+  const request = activeMatches.get(requestId);
+  if (!request) {
+    return { success: false, message: '요청을 찾을 수 없습니다.' };
+  }
+
+  if (request.matchedTechId !== techId) {
+    return { success: false, message: '권한이 없습니다.' };
+  }
+
+  request.status = 'departed';
+  request.departedAt = new Date();
+  activeMatches.set(requestId, request);
+
+  // Update database
+  await query(
+    `UPDATE match_requests SET status = 'departed', departed_at = NOW() WHERE id = $1`,
+    [requestId]
+  );
+
+  // Notify customer
+  if (request.customer?.phone && request.matchedTech) {
+    notifyCustomerTechDeparted(
+      request.customer.phone,
+      request.matchedTech.name,
+      eta
+    ).catch(err => console.error('[Matching] Failed to notify customer:', err));
+  }
+
+  return { success: true, message: '출발 알림이 전송되었습니다.' };
+}
+
+/**
+ * Update job status - tech arrived
+ */
+export async function updateJobArrived(
+  requestId: string,
+  techId: string
+): Promise<{ success: boolean; message: string }> {
+  const request = activeMatches.get(requestId);
+  if (!request) {
+    return { success: false, message: '요청을 찾을 수 없습니다.' };
+  }
+
+  if (request.matchedTechId !== techId) {
+    return { success: false, message: '권한이 없습니다.' };
+  }
+
+  request.status = 'arrived';
+  request.arrivedAt = new Date();
+  activeMatches.set(requestId, request);
+
+  // Update database
+  await query(
+    `UPDATE match_requests SET status = 'arrived', arrived_at = NOW() WHERE id = $1`,
+    [requestId]
+  );
+
+  // Notify customer
+  if (request.customer?.phone && request.matchedTech) {
+    notifyCustomerTechArriving(
+      request.customer.phone,
+      request.matchedTech.name
+    ).catch(err => console.error('[Matching] Failed to notify customer:', err));
+  }
+
+  return { success: true, message: '도착 알림이 전송되었습니다.' };
+}
+
+/**
+ * Update job status - completed (with balance)
+ */
+export async function updateJobCompleted(
+  requestId: string,
+  techId: string,
+  balanceAmount: number,
+  paymentUrl: string
+): Promise<{ success: boolean; message: string }> {
+  const request = activeMatches.get(requestId);
+  if (!request) {
+    return { success: false, message: '요청을 찾을 수 없습니다.' };
+  }
+
+  if (request.matchedTechId !== techId) {
+    return { success: false, message: '권한이 없습니다.' };
+  }
+
+  request.status = 'completed';
+  request.completedAt = new Date();
+  activeMatches.set(requestId, request);
+
+  // Update database
+  await query(
+    `UPDATE match_requests SET status = 'completed', completed_at = NOW() WHERE id = $1`,
+    [requestId]
+  );
+
+  // Notify customer with balance payment link
+  if (request.customer?.phone) {
+    notifyCustomerBalanceRequest(
+      request.customer.phone,
+      balanceAmount,
+      paymentUrl
+    ).catch(err => console.error('[Matching] Failed to notify customer:', err));
+  }
+
+  return { success: true, message: '작업 완료! 잔금 요청이 전송되었습니다.' };
 }
 
 /**

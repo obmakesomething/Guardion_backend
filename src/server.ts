@@ -19,7 +19,13 @@ import {
   executeLevel2Matching,
   approveSurcharge,
   getMatchingStatus,
+  updateCustomerInfo,
+  getMatchRequest,
+  updateJobDeparted,
+  updateJobArrived,
+  updateJobCompleted,
 } from './modules/matching/index.js';
+import type { CustomerInfo } from './types/index.js';
 import {
   createCalloutPayment,
   createBalancePayment,
@@ -80,8 +86,11 @@ const payCalloutDepositSchema = {
 
 const requestSmartMatchSchema = {
   district: z.string().describe('서울시 구 이름 (예: 성동구, 관악구)'),
+  address: z.string().describe('상세 주소 (예: 성동구 왕십리로 123)'),
+  phone: z.string().describe('연락받을 전화번호'),
   lockType: z.enum(['digital', 'mechanical', 'smart', 'padlock', 'unknown']).default('digital'),
   difficulty: z.enum(['easy', 'medium', 'hard', 'expert']).default('medium'),
+  lockPhotoUrl: z.string().optional().describe('도어락 사진 URL (선택)'),
   userId: z.string().optional(),
 };
 
@@ -314,11 +323,26 @@ function createklygoServer() {
         return buildWidgetResponse(`죄송합니다. "${args.district}"는 현재 서비스 지역이 아닙니다.`);
       }
 
-      // Create match request
+      // Validate required customer info
+      if (!args.phone || !args.address) {
+        return buildWidgetResponse(
+          `📞 연락처와 주소가 필요합니다.\n\n` +
+          `기사님을 호출하려면 다음 정보를 알려주세요:\n` +
+          `• 연락받을 전화번호\n` +
+          `• 상세 주소 (동/호수 포함)`
+        );
+      }
+
+      // Create match request with customer info
       const matchRequest = await createMatchRequest({
         userId: args.userId,
         district: districtKey,
         basePrice: config.pricing.calloutFee,
+        customer: {
+          phone: args.phone,
+          address: args.address,
+          lockPhotoUrl: args.lockPhotoUrl,
+        },
       });
 
       // Check if callout has been paid
@@ -623,7 +647,51 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
   }
 
   // =========================================================
-  // API: Tech submits balance amount
+  // API: Tech updates job status - departed
+  // =========================================================
+  if (req.method === 'POST' && url.pathname === '/api/tech/departed') {
+    try {
+      const body = await readJsonBody(req);
+      const { requestId, techId, eta } = body as { requestId: string; techId: string; eta?: number };
+
+      if (!requestId || !techId) {
+        sendJson(res, 400, { success: false, error: '필수 정보가 누락되었습니다.' });
+        return;
+      }
+
+      const result = await updateJobDeparted(requestId, techId, eta ?? 10);
+      sendJson(res, result.success ? 200 : 400, result);
+    } catch (error) {
+      console.error('[Tech] Departed error:', error);
+      sendJson(res, 500, { success: false, error: '처리 중 오류가 발생했습니다.' });
+    }
+    return;
+  }
+
+  // =========================================================
+  // API: Tech updates job status - arrived
+  // =========================================================
+  if (req.method === 'POST' && url.pathname === '/api/tech/arrived') {
+    try {
+      const body = await readJsonBody(req);
+      const { requestId, techId } = body as { requestId: string; techId: string };
+
+      if (!requestId || !techId) {
+        sendJson(res, 400, { success: false, error: '필수 정보가 누락되었습니다.' });
+        return;
+      }
+
+      const result = await updateJobArrived(requestId, techId);
+      sendJson(res, result.success ? 200 : 400, result);
+    } catch (error) {
+      console.error('[Tech] Arrived error:', error);
+      sendJson(res, 500, { success: false, error: '처리 중 오류가 발생했습니다.' });
+    }
+    return;
+  }
+
+  // =========================================================
+  // API: Tech submits balance amount (job completed)
   // =========================================================
   if (req.method === 'POST' && url.pathname === '/api/tech/submit-balance') {
     try {
@@ -644,7 +712,9 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
 
       console.log('[Tech] Balance submitted:', { requestId, techId, balanceAmount });
 
-      // TODO: Send Kakao notification to customer with payment link
+      // Update job status to completed and notify customer
+      await updateJobCompleted(requestId, techId, balanceAmount, payment.checkoutUrl);
+
       sendJson(res, 200, {
         success: true,
         message: '잔금 요청이 전송되었습니다.',
@@ -657,6 +727,31 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
       console.error('[Tech] Submit balance error:', error);
       sendJson(res, 500, { success: false, error: '잔금 전송 중 오류가 발생했습니다.' });
     }
+    return;
+  }
+
+  // =========================================================
+  // API: Get job status (for tech page polling)
+  // =========================================================
+  if (req.method === 'GET' && url.pathname === '/api/job/status') {
+    const requestId = url.searchParams.get('requestId');
+
+    if (!requestId) {
+      sendJson(res, 400, { error: 'requestId required' });
+      return;
+    }
+
+    const request = getMatchRequest(requestId);
+    if (!request) {
+      sendJson(res, 404, { error: 'Job not found' });
+      return;
+    }
+
+    sendJson(res, 200, {
+      status: request.status,
+      matchedTechId: request.matchedTechId,
+      isTaken: request.status !== 'pending' && request.status !== 'matching',
+    });
     return;
   }
 

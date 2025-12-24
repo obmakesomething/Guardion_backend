@@ -357,7 +357,7 @@
       <div class="status-message">
         <div class="status-icon">✅</div>
         <div class="status-title">수락 완료!</div>
-        <div class="status-text">고객님께 연락드리겠습니다.</div>
+        <div class="status-text">고객님께 카카오톡으로 안내되었습니다.</div>
       </div>
 
       <div class="job-details" style="margin-top: 20px;">
@@ -371,8 +371,45 @@
         </div>
       </div>
 
+      <button class="btn btn-accept" onclick="notifyDeparted()" style="width: 100%; margin-top: 16px;">
+        🚗 출발하기 (고객에게 알림)
+      </button>
+    </div>
+
+    <!-- Departed Section (hidden initially) -->
+    <div id="departed-section" class="card hidden">
+      <div class="status-message">
+        <div class="status-icon">🚗</div>
+        <div class="status-title">출발했습니다!</div>
+        <div class="status-text">고객님께 도착 예정 알림이 전송되었습니다.</div>
+      </div>
+
+      <div class="job-details" style="margin-top: 20px;">
+        <div class="job-detail">
+          <div class="job-detail-label">고객 연락처</div>
+          <div class="job-detail-value" id="departed-customer-phone">010-****-1234</div>
+        </div>
+        <div class="job-detail">
+          <div class="job-detail-label">주소</div>
+          <div class="job-detail-value" id="departed-customer-address">서울시 성동구 ***</div>
+        </div>
+      </div>
+
+      <button class="btn btn-accept" onclick="notifyArrived()" style="width: 100%; margin-top: 16px;">
+        📍 도착 완료 (작업 시작)
+      </button>
+    </div>
+
+    <!-- Arrived Section (hidden initially) -->
+    <div id="arrived-section" class="card hidden">
+      <div class="status-message">
+        <div class="status-icon">🔧</div>
+        <div class="status-title">작업 중...</div>
+        <div class="status-text">작업이 끝나면 잔금을 입력해주세요.</div>
+      </div>
+
       <button class="btn btn-accept" onclick="showBalanceSection()" style="width: 100%; margin-top: 16px;">
-        작업 완료 후 잔금 입력
+        💰 작업 완료 → 잔금 입력
       </button>
     </div>
 
@@ -484,13 +521,49 @@
     document.getElementById('job-balance-range').textContent = jobData.balanceRange;
     document.getElementById('competitor-count').textContent = jobData.competitorCount;
 
+    // Store customer info globally
+    let customerInfo = { phone: '', address: '' };
+
     function hideAllSections() {
       document.getElementById('job-offer-section').classList.add('hidden');
       document.getElementById('accepted-section').classList.add('hidden');
+      document.getElementById('departed-section').classList.add('hidden');
+      document.getElementById('arrived-section').classList.add('hidden');
       document.getElementById('balance-section').classList.add('hidden');
       document.getElementById('completed-section').classList.add('hidden');
       document.getElementById('declined-section').classList.add('hidden');
       document.getElementById('taken-section').classList.add('hidden');
+    }
+
+    // Poll job status to check if taken by another tech
+    let pollInterval = null;
+    function startPolling() {
+      if (pollInterval) return;
+      pollInterval = setInterval(async () => {
+        try {
+          const response = await fetch(`${API_BASE}/api/job/status?requestId=${requestId}`);
+          const data = await response.json();
+          if (data.isTaken && data.matchedTechId !== techId) {
+            clearInterval(pollInterval);
+            hideAllSections();
+            document.getElementById('taken-section').classList.remove('hidden');
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+        }
+      }, 3000);
+    }
+
+    function stopPolling() {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+    }
+
+    // Start polling when page loads
+    if (requestId) {
+      startPolling();
     }
 
     async function acceptJob() {
@@ -508,15 +581,18 @@
         const data = await response.json();
 
         if (data.success) {
+          stopPolling();
           hideAllSections();
           document.getElementById('accepted-section').classList.remove('hidden');
           // Update customer info if available
           if (data.customer) {
+            customerInfo = data.customer;
             document.getElementById('customer-phone').textContent = data.customer.phone || '010-****-****';
             document.getElementById('customer-address').textContent = data.customer.address || '주소 정보 없음';
           }
         } else {
           // Job was already taken or error
+          stopPolling();
           hideAllSections();
           document.getElementById('taken-section').classList.remove('hidden');
         }
@@ -527,9 +603,53 @@
       }
     }
 
+    async function notifyDeparted() {
+      try {
+        const response = await fetch(`${API_BASE}/api/tech/departed`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestId, techId, eta: 10 })
+        });
+        const data = await response.json();
+
+        if (data.success) {
+          hideAllSections();
+          document.getElementById('departed-section').classList.remove('hidden');
+          document.getElementById('departed-customer-phone').textContent = customerInfo.phone || '010-****-****';
+          document.getElementById('departed-customer-address').textContent = customerInfo.address || '주소 정보 없음';
+        } else {
+          alert(data.message || '오류가 발생했습니다.');
+        }
+      } catch (error) {
+        console.error('Departed error:', error);
+        alert('서버 오류가 발생했습니다.');
+      }
+    }
+
+    async function notifyArrived() {
+      try {
+        const response = await fetch(`${API_BASE}/api/tech/arrived`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestId, techId })
+        });
+        const data = await response.json();
+
+        if (data.success) {
+          hideAllSections();
+          document.getElementById('arrived-section').classList.remove('hidden');
+        } else {
+          alert(data.message || '오류가 발생했습니다.');
+        }
+      } catch (error) {
+        console.error('Arrived error:', error);
+        alert('서버 오류가 발생했습니다.');
+      }
+    }
+
     async function declineJob() {
       console.log('Declining job:', { requestId, techId });
-      // Optionally notify server about decline
+      stopPolling();
       hideAllSections();
       document.getElementById('declined-section').classList.remove('hidden');
     }
