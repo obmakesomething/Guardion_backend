@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>결제 완료 - OpenNow AI</title>
+  <title>결제 확인 중 - OpenNow AI</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -35,6 +35,17 @@
       margin: 0 auto 24px;
       font-size: 40px;
     }
+    .icon.loading {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      animation: pulse 1.5s infinite;
+    }
+    .icon.error {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(0.95); }
+    }
     h1 {
       font-size: 1.5rem;
       margin-bottom: 8px;
@@ -58,10 +69,17 @@
       margin-bottom: 24px;
       text-align: left;
     }
+    .info-box.matching {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
     .info-box h3 {
       font-size: 0.875rem;
       color: #16a34a;
       margin-bottom: 8px;
+    }
+    .info-box.matching h3 {
+      color: #2563eb;
     }
     .info-box p {
       font-size: 0.875rem;
@@ -86,40 +104,154 @@
       font-size: 0.75rem;
       color: #94a3b8;
     }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .error-msg {
+      color: #dc2626;
+      background: #fef2f2;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="icon">✓</div>
-    <h1>결제가 완료되었습니다!</h1>
-    <p>출장비 결제가 성공적으로 처리되었습니다.</p>
-    <div class="amount" id="amount">₩35,000</div>
-
-    <div class="info-box">
-      <h3>📍 다음 단계</h3>
-      <p>기사님 매칭이 자동으로 시작됩니다.<br>ChatGPT 대화창에서 진행 상황을 확인하세요.</p>
+    <!-- Loading State -->
+    <div id="loadingState">
+      <div class="icon loading"><div class="spinner"></div></div>
+      <h1>결제 확인 중...</h1>
+      <p>잠시만 기다려주세요.</p>
     </div>
 
-    <a href="https://chat.openai.com" class="btn">ChatGPT로 돌아가기</a>
+    <!-- Success State -->
+    <div id="successState" class="hidden">
+      <div class="icon">✓</div>
+      <h1>결제가 완료되었습니다!</h1>
+      <p>출장비 결제가 성공적으로 처리되었습니다.</p>
+      <div class="amount" id="amount">₩35,000</div>
+
+      <div class="info-box matching">
+        <h3>🔍 기사님 매칭 중</h3>
+        <p id="matchingStatus">기사님을 찾고 있습니다...<br>ChatGPT 대화창에서 진행 상황을 확인하세요.</p>
+      </div>
+
+      <a href="https://chat.openai.com" class="btn">ChatGPT로 돌아가기</a>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="hidden">
+      <div class="icon error">✕</div>
+      <h1>결제 확인 실패</h1>
+      <p class="error-msg" id="errorMessage">결제 처리 중 오류가 발생했습니다.</p>
+      <a href="https://alygo.online" class="btn">다시 시도하기</a>
+    </div>
 
     <div class="footer">
-      결제 문의: support@opennow.ai
+      결제 문의: support@alygo.online
     </div>
   </div>
 
   <script>
-    // Parse payment info from URL
-    const params = new URLSearchParams(window.location.search);
-    const amount = params.get('amount');
-    if (amount) {
-      document.getElementById('amount').textContent = `₩${parseInt(amount).toLocaleString('ko-KR')}`;
+    const API_BASE = window.location.origin;
+
+    async function confirmPayment() {
+      const params = new URLSearchParams(window.location.search);
+      const paymentKey = params.get('paymentKey');
+      const orderId = params.get('orderId');
+      const amount = params.get('amount');
+
+      if (!paymentKey || !orderId || !amount) {
+        showError('결제 정보가 누락되었습니다.');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/api/payment/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentKey,
+            orderId,
+            amount: parseInt(amount, 10)
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showSuccess(amount);
+          // Start matching after payment confirmation
+          startMatching(orderId);
+        } else {
+          showError(result.error || '결제 확인에 실패했습니다.');
+        }
+      } catch (err) {
+        console.error('Payment confirmation error:', err);
+        showError('서버와 통신 중 오류가 발생했습니다.');
+      }
     }
 
-    // Auto-redirect after 5 seconds
-    setTimeout(() => {
-      // In production, redirect back to ChatGPT or confirm the payment
-      console.log('Confirming payment...');
-    }, 3000);
+    function showSuccess(amount) {
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('successState').classList.remove('hidden');
+      document.getElementById('amount').textContent = `₩${parseInt(amount).toLocaleString('ko-KR')}`;
+      document.title = '결제 완료 - OpenNow AI';
+    }
+
+    function showError(message) {
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('errorState').classList.remove('hidden');
+      document.getElementById('errorMessage').textContent = message;
+      document.title = '결제 실패 - OpenNow AI';
+    }
+
+    async function startMatching(orderId) {
+      // Extract requestId from orderId (format: callout_<requestId>_<timestamp>)
+      const parts = orderId.split('_');
+      if (parts.length < 2) return;
+
+      const requestId = parts[1];
+
+      // Poll matching status
+      const pollInterval = setInterval(async () => {
+        try {
+          const response = await fetch(`${API_BASE}/api/matching/status?requestId=${requestId}`);
+          const data = await response.json();
+
+          if (data.status) {
+            const statusEl = document.getElementById('matchingStatus');
+
+            if (data.status.status === 'matched') {
+              clearInterval(pollInterval);
+              statusEl.innerHTML = `✅ 기사님이 배정되었습니다!<br>곧 도착 예정입니다.`;
+            } else if (data.status.level === 2) {
+              statusEl.innerHTML = `🔍 인접 지역으로 검색 확대 중...<br>${data.status.notifiedCount}명의 기사님께 알림 발송됨`;
+            } else {
+              statusEl.innerHTML = `🔍 기사님을 찾고 있습니다...<br>${data.status.notifiedCount || 0}명의 기사님께 알림 발송됨`;
+            }
+          }
+        } catch (err) {
+          console.error('Matching status error:', err);
+        }
+      }, 3000);
+
+      // Stop polling after 5 minutes
+      setTimeout(() => clearInterval(pollInterval), 300000);
+    }
+
+    // Start confirmation on page load
+    confirmPayment();
   </script>
 </body>
 </html>

@@ -26,11 +26,39 @@ import {
   isCalloutPaid,
   estimateBalanceRange,
   formatPrice,
+  confirmTossPayment,
+  getPaymentByMatchAndType,
 } from './modules/payment/index.js';
 import { DISTRICT_NAMES, type SeoulDistrict } from './types/index.js';
+import { acceptMatch } from './modules/matching/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Helper: Read request body as JSON
+async function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch {
+        reject(new Error('Invalid JSON'));
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+// Helper: Send JSON response
+function sendJson(res: ServerResponse, status: number, data: unknown) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+  });
+  res.end(JSON.stringify(data));
+}
 
 // Load widget HTML
 let widgetHtml: string;
@@ -533,6 +561,199 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
     res.writeHead(200, { 'content-type': 'text/plain' });
     res.end('OK');
     return;
+  }
+
+  // =========================================================
+  // API: Payment confirmation (Toss callback)
+  // =========================================================
+  if (req.method === 'POST' && url.pathname === '/api/payment/confirm') {
+    try {
+      const body = await readJsonBody(req);
+      const { paymentKey, orderId, amount } = body as {
+        paymentKey: string;
+        orderId: string;
+        amount: number;
+      };
+
+      if (!paymentKey || !orderId || !amount) {
+        sendJson(res, 400, { success: false, error: 'Missing required fields' });
+        return;
+      }
+
+      const result = await confirmTossPayment(paymentKey, orderId, amount);
+
+      if (result.success) {
+        // Payment confirmed - now we can start matching
+        // The matching will be triggered by the frontend polling or webhook
+        sendJson(res, 200, {
+          success: true,
+          message: '결제가 완료되었습니다. 기사님 매칭이 시작됩니다.',
+          payment: result.payment,
+        });
+      } else {
+        sendJson(res, 400, { success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error('[Payment] Confirm error:', error);
+      sendJson(res, 500, { success: false, error: '결제 처리 중 오류가 발생했습니다.' });
+    }
+    return;
+  }
+
+  // =========================================================
+  // API: Tech accepts a job
+  // =========================================================
+  if (req.method === 'POST' && url.pathname === '/api/tech/accept') {
+    try {
+      const body = await readJsonBody(req);
+      const { requestId, techId } = body as { requestId: string; techId: string };
+
+      if (!requestId || !techId) {
+        sendJson(res, 400, { success: false, error: '요청 ID와 기사님 ID가 필요합니다.' });
+        return;
+      }
+
+      const result = await acceptMatch(requestId, techId);
+      sendJson(res, result.success ? 200 : 400, result);
+    } catch (error) {
+      console.error('[Tech] Accept error:', error);
+      sendJson(res, 500, { success: false, error: '처리 중 오류가 발생했습니다.' });
+    }
+    return;
+  }
+
+  // =========================================================
+  // API: Tech submits balance amount
+  // =========================================================
+  if (req.method === 'POST' && url.pathname === '/api/tech/submit-balance') {
+    try {
+      const body = await readJsonBody(req);
+      const { requestId, techId, balanceAmount } = body as {
+        requestId: string;
+        techId: string;
+        balanceAmount: number;
+      };
+
+      if (!requestId || !balanceAmount) {
+        sendJson(res, 400, { success: false, error: '필수 정보가 누락되었습니다.' });
+        return;
+      }
+
+      // Create balance payment request for customer
+      const payment = await createBalancePayment(requestId, balanceAmount);
+
+      console.log('[Tech] Balance submitted:', { requestId, techId, balanceAmount });
+
+      // TODO: Send Kakao notification to customer with payment link
+      sendJson(res, 200, {
+        success: true,
+        message: '잔금 요청이 전송되었습니다.',
+        payment: {
+          amount: payment.amount,
+          checkoutUrl: payment.checkoutUrl,
+        },
+      });
+    } catch (error) {
+      console.error('[Tech] Submit balance error:', error);
+      sendJson(res, 500, { success: false, error: '잔금 전송 중 오류가 발생했습니다.' });
+    }
+    return;
+  }
+
+  // =========================================================
+  // Toss Payments Webhook (server-to-server callback)
+  // =========================================================
+  if (req.method === 'POST' && url.pathname === '/api/webhook/toss') {
+    try {
+      const body = await readJsonBody(req);
+      console.log('[Webhook] Toss payment event:', body);
+
+      // Toss sends payment status updates here
+      // Verify the webhook signature in production
+      const { eventType, data } = body as {
+        eventType: string;
+        data: { paymentKey: string; orderId: string; status: string };
+      };
+
+      if (eventType === 'PAYMENT_STATUS_CHANGED' && data.status === 'DONE') {
+        // Payment completed - trigger matching if callout payment
+        console.log('[Webhook] Payment completed:', data.orderId);
+      }
+
+      sendJson(res, 200, { success: true });
+    } catch (error) {
+      console.error('[Webhook] Toss error:', error);
+      sendJson(res, 500, { success: false });
+    }
+    return;
+  }
+
+  // =========================================================
+  // API: Get payment status
+  // =========================================================
+  if (req.method === 'GET' && url.pathname === '/api/payment/status') {
+    const requestId = url.searchParams.get('requestId');
+    const type = url.searchParams.get('type') as 'callout' | 'balance';
+
+    if (!requestId) {
+      sendJson(res, 400, { error: 'requestId required' });
+      return;
+    }
+
+    const payment = getPaymentByMatchAndType(requestId, type ?? 'callout');
+    sendJson(res, 200, { payment });
+    return;
+  }
+
+  // =========================================================
+  // API: Get matching status
+  // =========================================================
+  if (req.method === 'GET' && url.pathname === '/api/matching/status') {
+    const requestId = url.searchParams.get('requestId');
+
+    if (!requestId) {
+      sendJson(res, 400, { error: 'requestId required' });
+      return;
+    }
+
+    const status = getMatchingStatus(requestId);
+    sendJson(res, 200, { status });
+    return;
+  }
+
+  // =========================================================
+  // Serve static files from /public
+  // =========================================================
+  if (req.method === 'GET') {
+    const publicPath = join(__dirname, '../public');
+    let filePath = url.pathname === '/' ? '/index.html' : url.pathname;
+
+    // Security: prevent directory traversal
+    if (filePath.includes('..')) {
+      res.writeHead(403).end('Forbidden');
+      return;
+    }
+
+    const fullPath = join(publicPath, filePath);
+
+    try {
+      const content = readFileSync(fullPath);
+      const ext = filePath.split('.').pop() ?? 'html';
+      const mimeTypes: Record<string, string> = {
+        html: 'text/html',
+        css: 'text/css',
+        js: 'application/javascript',
+        json: 'application/json',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        svg: 'image/svg+xml',
+      };
+      res.writeHead(200, { 'Content-Type': mimeTypes[ext] ?? 'text/plain' });
+      res.end(content);
+      return;
+    } catch {
+      // File not found - continue to check other routes
+    }
   }
 
   // MCP endpoint

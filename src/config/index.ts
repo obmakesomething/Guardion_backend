@@ -19,8 +19,9 @@ export const config = {
   toss: {
     clientKey: process.env.TOSS_CLIENT_KEY ?? '',
     secretKey: process.env.TOSS_SECRET_KEY ?? '',
-    successUrl: process.env.TOSS_SUCCESS_URL ?? 'https://opennow.ai/payment/success',
-    failUrl: process.env.TOSS_FAIL_URL ?? 'https://opennow.ai/payment/fail',
+    webhookSecret: process.env.TOSS_WEBHOOK_SECRET ?? '',
+    successUrl: process.env.TOSS_SUCCESS_URL ?? 'https://alygo.online/payment/success',
+    failUrl: process.env.TOSS_FAIL_URL ?? 'https://alygo.online/payment/fail',
   },
 
   // Matching Engine
@@ -52,8 +53,9 @@ export const config = {
 
   // URLs
   urls: {
-    techAcceptPage: process.env.TECH_ACCEPT_URL ?? 'https://opennow.ai/tech',
-    paymentPage: process.env.PAYMENT_URL ?? 'https://opennow.ai/pay',
+    baseUrl: process.env.BASE_URL ?? 'https://alygo.online',
+    techAcceptPage: process.env.TECH_ACCEPT_URL ?? 'https://alygo.online/tech',
+    paymentPage: process.env.PAYMENT_URL ?? 'https://alygo.online/pay',
   },
 } as const;
 

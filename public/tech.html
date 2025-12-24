@@ -457,21 +457,23 @@
 
     <div class="footer">
       OpenNow AI &copy; 2024<br>
-      문의: support@opennow.ai
+      문의: support@alygo.online
     </div>
   </div>
 
   <script>
+    const API_BASE = window.location.origin;
+
     // Parse URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const requestId = urlParams.get('request') || urlParams.get('requestId');
     const techId = urlParams.get('tech') || urlParams.get('techId');
 
-    // Mock data - in production, this would come from API
+    // Job data from URL params
     const jobData = {
       district: urlParams.get('district') || '성동구',
       lockType: urlParams.get('lockType') || '디지털 도어락',
-      balanceRange: '₩50,000~80,000',
+      balanceRange: urlParams.get('balanceRange') || '₩50,000~80,000',
       competitorCount: urlParams.get('count') || 5,
       calloutShare: 30000,
     };
@@ -492,30 +494,42 @@
     }
 
     async function acceptJob() {
-      // In production, call API to accept the job
-      console.log('Accepting job:', { requestId, techId });
+      if (!requestId || !techId) {
+        alert('요청 정보가 올바르지 않습니다.');
+        return;
+      }
 
-      // Simulate API call
       try {
-        // const response = await fetch(`/api/tech/accept`, {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ requestId, techId })
-        // });
-        // const data = await response.json();
+        const response = await fetch(`${API_BASE}/api/tech/accept`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestId, techId })
+        });
+        const data = await response.json();
 
-        // Mock success
-        hideAllSections();
-        document.getElementById('accepted-section').classList.remove('hidden');
+        if (data.success) {
+          hideAllSections();
+          document.getElementById('accepted-section').classList.remove('hidden');
+          // Update customer info if available
+          if (data.customer) {
+            document.getElementById('customer-phone').textContent = data.customer.phone || '010-****-****';
+            document.getElementById('customer-address').textContent = data.customer.address || '주소 정보 없음';
+          }
+        } else {
+          // Job was already taken or error
+          hideAllSections();
+          document.getElementById('taken-section').classList.remove('hidden');
+        }
       } catch (error) {
-        // Handle case where job was already taken
+        console.error('Accept error:', error);
         hideAllSections();
         document.getElementById('taken-section').classList.remove('hidden');
       }
     }
 
-    function declineJob() {
+    async function declineJob() {
       console.log('Declining job:', { requestId, techId });
+      // Optionally notify server about decline
       hideAllSections();
       document.getElementById('declined-section').classList.remove('hidden');
     }
@@ -530,7 +544,6 @@
     }
 
     function uploadPhoto(index) {
-      // In production, implement photo upload
       const items = document.querySelectorAll('.photo-item');
       items[index].textContent = '✓';
       items[index].classList.add('uploaded');
@@ -544,19 +557,28 @@
         return;
       }
 
-      // In production, call API to submit balance
-      console.log('Submitting balance:', { requestId, techId, balanceAmount });
+      try {
+        const response = await fetch(`${API_BASE}/api/tech/submit-balance`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestId, techId, balanceAmount })
+        });
+        const data = await response.json();
 
-      // Calculate settlement (balance - 10% platform fee + callout share)
-      const platformFee = Math.round(balanceAmount * 0.1);
-      const balanceShare = balanceAmount - platformFee;
-      const totalSettlement = jobData.calloutShare + balanceShare;
+        // Calculate settlement (balance - 10% platform fee + callout share)
+        const platformFee = Math.round(balanceAmount * 0.1);
+        const balanceShare = balanceAmount - platformFee;
+        const totalSettlement = jobData.calloutShare + balanceShare;
 
-      document.getElementById('submitted-balance').textContent = `₩${balanceAmount.toLocaleString('ko-KR')}`;
-      document.getElementById('estimated-settlement').textContent = `₩${totalSettlement.toLocaleString('ko-KR')}`;
+        document.getElementById('submitted-balance').textContent = `₩${balanceAmount.toLocaleString('ko-KR')}`;
+        document.getElementById('estimated-settlement').textContent = `₩${totalSettlement.toLocaleString('ko-KR')}`;
 
-      hideAllSections();
-      document.getElementById('completed-section').classList.remove('hidden');
+        hideAllSections();
+        document.getElementById('completed-section').classList.remove('hidden');
+      } catch (error) {
+        console.error('Submit balance error:', error);
+        alert('잔금 전송 중 오류가 발생했습니다.');
+      }
     }
   </script>
 </body>
