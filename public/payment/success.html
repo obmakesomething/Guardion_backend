@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>결제 확인 중 - OpenNow AI</title>
+  <title>결제 확인 중 - klygo</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -206,14 +206,14 @@
       document.getElementById('loadingState').classList.add('hidden');
       document.getElementById('successState').classList.remove('hidden');
       document.getElementById('amount').textContent = `₩${parseInt(amount).toLocaleString('ko-KR')}`;
-      document.title = '결제 완료 - OpenNow AI';
+      document.title = '결제 완료 - klygo';
     }
 
     function showError(message) {
       document.getElementById('loadingState').classList.add('hidden');
       document.getElementById('errorState').classList.remove('hidden');
       document.getElementById('errorMessage').textContent = message;
-      document.title = '결제 실패 - OpenNow AI';
+      document.title = '결제 실패 - klygo';
     }
 
     async function startMatching(orderId) {

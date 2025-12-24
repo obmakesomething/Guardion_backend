@@ -271,7 +271,7 @@ async function sendTechNotifications(
       lockType: request.lockAnalysis?.lockType ?? 'digital',
       price: request.basePrice + (request.surchargeApproved ? request.surchargeAmount : 0),
       urgencyNote: level > 1 ? '광역 매칭 요청입니다' : '긴급 개문 요청입니다',
-      acceptUrl: `https://opennow.ai/accept/${request.id}?tech=${tech.id}`,
+      acceptUrl: `https://alygo.online/accept/${request.id}?tech=${tech.id}`,
       competitorCount: techs.length,
     }),
   }));

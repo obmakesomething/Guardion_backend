@@ -1,10 +1,10 @@
-# OpenNow AI - 긴급 개문 서비스
+# klygo - 긴급 개문 서비스
 
 ChatGPT Apps SDK를 활용한 지능형 긴급 개문 서비스 플랫폼입니다.
 
 ## 개요
 
-OpenNow AI는 ChatGPT 내에서 사용자의 긴급 개문 상황을 인지하고, AI 시각 분석을 통해 도어락 모델을 판독하며, 서울 전역의 숙련된 기사님(Affiliate)을 지능적으로 매칭하는 서비스입니다.
+klygo는 ChatGPT 내에서 사용자의 긴급 개문 상황을 인지하고, AI 시각 분석을 통해 도어락 모델을 판독하며, 서울 전역의 숙련된 기사님(Affiliate)을 지능적으로 매칭하는 서비스입니다.
 
 ## 주요 기능
 
@@ -83,7 +83,7 @@ cp .env.example .env
 ### 3. 데이터베이스 설정
 ```bash
 # PostgreSQL 데이터베이스 생성
-createdb opennow_ai
+createdb klygo
 
 # 스키마 적용
 npm run db:migrate
@@ -148,5 +148,5 @@ Private - All Rights Reserved
 
 ## 연락처
 
-- 이메일: support@opennow.ai
-- 기사님 문의: tech@opennow.ai
+- 이메일: support@alygo.online
+- 기사님 문의: tech@alygo.online

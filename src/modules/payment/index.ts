@@ -77,7 +77,7 @@ export async function createCalloutPayment(matchRequestId: string): Promise<{
   const checkoutUrl = buildTossCheckoutUrl({
     orderId,
     amount,
-    orderName: 'OpenNow AI 긴급 개문 출장비',
+    orderName: 'klygo 긴급 개문 출장비',
     customerName: '고객',
   });
 
@@ -138,7 +138,7 @@ export async function createBalancePayment(
   const checkoutUrl = buildTossCheckoutUrl({
     orderId,
     amount: balanceAmount,
-    orderName: 'OpenNow AI 긴급 개문 작업비',
+    orderName: 'klygo 긴급 개문 작업비',
     customerName: '고객',
   });
 

@@ -73,7 +73,7 @@ export async function sendKakaoAlimtalk(
       },
       body: JSON.stringify({
         message,
-        agent: { appId: 'OpenNow-AI' },
+        agent: { appId: 'klygo-AI' },
       }),
     });
 
@@ -124,7 +124,7 @@ export async function sendBatchKakaoAlimtalk(
       },
       body: JSON.stringify({
         messages: solapiMessages,
-        agent: { appId: 'OpenNow-AI' },
+        agent: { appId: 'klygo-AI' },
       }),
     });
 

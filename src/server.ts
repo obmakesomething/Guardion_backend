@@ -63,9 +63,9 @@ function sendJson(res: ServerResponse, status: number, data: unknown) {
 // Load widget HTML
 let widgetHtml: string;
 try {
-  widgetHtml = readFileSync(join(__dirname, '../public/widget.html'), 'utf8');
+  widgetHtml = readFileSync(join(__dirname, '../public/klygo-widget.html'), 'utf8');
 } catch {
-  widgetHtml = '<html><body><h1>OpenNow AI Widget</h1></body></html>';
+  widgetHtml = '<html><body><h1>klygo Widget</h1></body></html>';
 }
 
 // Tool input schemas
@@ -152,18 +152,18 @@ function buildWidgetResponse(message: string) {
   };
 }
 
-function createOpenNowServer() {
-  const server = new McpServer({ name: 'opennow-ai', version: '1.0.0' });
+function createklygoServer() {
+  const server = new McpServer({ name: 'klygo', version: '1.0.0' });
 
   // Register the widget resource
   server.registerResource(
-    'opennow-widget',
-    'ui://widget/opennow.html',
-    { description: 'OpenNow AI 긴급 개문 서비스 위젯' },
+    'klygo-widget',
+    'ui://widget/klygo.html',
+    { description: 'klygo 긴급 개문 서비스 위젯' },
     async () => ({
       contents: [
         {
-          uri: 'ui://widget/opennow.html',
+          uri: 'ui://widget/klygo.html',
           mimeType: 'text/html+skybridge',
           text: widgetHtml,
           _meta: { 'openai/widgetPrefersBorder': true },
@@ -185,7 +185,7 @@ function createOpenNowServer() {
         readOnlyHint: true,
       },
       _meta: {
-        'openai/outputTemplate': 'ui://widget/opennow.html',
+        'openai/outputTemplate': 'ui://widget/klygo.html',
         'openai/toolInvocation/invoking': '도어락 분석 중...',
         'openai/toolInvocation/invoked': '도어락 분석 완료',
       },
@@ -251,7 +251,7 @@ function createOpenNowServer() {
         openWorldHint: true,
       },
       _meta: {
-        'openai/outputTemplate': 'ui://widget/opennow.html',
+        'openai/outputTemplate': 'ui://widget/klygo.html',
         'openai/toolInvocation/invoking': '결제창 생성 중...',
         'openai/toolInvocation/invoked': '결제창 생성 완료',
       },
@@ -303,7 +303,7 @@ function createOpenNowServer() {
         destructiveHint: true,
       },
       _meta: {
-        'openai/outputTemplate': 'ui://widget/opennow.html',
+        'openai/outputTemplate': 'ui://widget/klygo.html',
         'openai/toolInvocation/invoking': '기사님 찾는 중...',
         'openai/toolInvocation/invoked': '매칭 진행 중',
       },
@@ -422,7 +422,7 @@ function createOpenNowServer() {
         openWorldHint: true,
       },
       _meta: {
-        'openai/outputTemplate': 'ui://widget/opennow.html',
+        'openai/outputTemplate': 'ui://widget/klygo.html',
         'openai/toolInvocation/invoking': '할증 승인 처리 중...',
         'openai/toolInvocation/invoked': '할증 승인 완료',
       },
@@ -478,7 +478,7 @@ function createOpenNowServer() {
         openWorldHint: true,
       },
       _meta: {
-        'openai/outputTemplate': 'ui://widget/opennow.html',
+        'openai/outputTemplate': 'ui://widget/klygo.html',
         'openai/toolInvocation/invoking': '잔금 결제창 생성 중...',
         'openai/toolInvocation/invoked': '잔금 결제창 생성 완료',
       },
@@ -546,7 +546,7 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
   if (req.method === 'GET' && url.pathname === '/') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({
-      service: 'OpenNow AI',
+      service: 'klygo',
       status: 'healthy',
       version: '1.0.0',
       pricing: {
@@ -762,7 +762,7 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id');
 
-    const server = createOpenNowServer();
+    const server = createklygoServer();
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,
@@ -793,7 +793,7 @@ httpServer.listen(port, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
-║   🔓 OpenNow AI - 긴급 개문 서비스                            ║
+║   🔓 klygo - 긴급 개문 서비스                            ║
 ║                                                               ║
 ║   MCP Server: http://localhost:${port}${MCP_PATH.padEnd(28)}║
 ║   Health:     http://localhost:${port}/health${' '.repeat(22)}║

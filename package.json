@@ -1,7 +1,7 @@
 {
-  "name": "opennow-ai-chatgpt-app",
+  "name": "klygo-chatgpt-app",
   "version": "1.0.0",
-  "description": "OpenNow AI - Intelligent Emergency Locksmith Service ChatGPT App",
+  "description": "klygo - Intelligent Emergency Locksmith Service ChatGPT App",
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
