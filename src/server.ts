@@ -364,10 +364,12 @@ function createklygoServer() {
         };
 
         return buildWidgetResponse(
-          `📍 ${args.district}에서 기사님을 호출하려면 먼저 출장비를 결제해주세요.\n\n` +
+          `📍 ${args.district}에서 기사님을 호출합니다.\n\n` +
           `💳 출장비: ${formatPrice(config.pricing.calloutFee)}\n\n` +
-          `결제 완료 후 자동으로 기사님 매칭이 시작됩니다.\n\n` +
-          `🔗 결제하기: ${payment.checkoutUrl}`
+          `아래 링크에서 결제하시면 바로 기사님 찾기가 시작됩니다!\n\n` +
+          `🔗 결제하기: ${payment.checkoutUrl}\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━\n` +
+          `📱 결제 후 진행 알림은 카카오톡으로 받으실 수 있어요.`
         );
       }
 
@@ -425,11 +427,18 @@ function createklygoServer() {
       }
 
       return buildWidgetResponse(
-        `🔍 ${args.district} 기사님 찾는 중...\n\n` +
-        `• ${level1Result.notifiedCount}명의 기사님께 알림을 보냈습니다.\n` +
-        `• 출장비: ${formatPrice(config.pricing.calloutFee)} (결제 완료)\n\n` +
-        `기사님이 수락하시면 바로 안내해드리겠습니다! 🚗\n\n` +
-        `⏱️ 2분 내 응답 없을 시 자동으로 인접 지역으로 확장됩니다.`
+        `✅ 접수 완료! 기사님을 찾고 있습니다.\n\n` +
+        `📍 지역: ${args.district}\n` +
+        `👨‍🔧 ${level1Result.notifiedCount}명의 기사님께 카카오 알림을 보냈습니다.\n` +
+        `💳 출장비: ${formatPrice(config.pricing.calloutFee)} (결제 완료)\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `🔔 진행 상황 안내\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `• 기사님이 수락하면 카카오톡으로 알려드려요\n` +
+        `• 기사님 출발/도착 알림도 카카오톡으로 받으실 수 있어요\n` +
+        `• 2분 내 응답 없으면 자동으로 더 넓은 지역에서 찾습니다\n\n` +
+        `⚠️ 기사님 배정 후에는 취소가 어렵습니다.\n` +
+        `   (기사님이 이미 출발하시기 때문에 취소 시 출장비 환불 불가)`
       );
     }
   );
@@ -480,12 +489,16 @@ function createklygoServer() {
       };
 
       return buildWidgetResponse(
-        `✅ 할증이 승인되었습니다!\n\n` +
-        `🔍 인접 지역으로 검색 범위를 확장합니다.\n\n` +
-        `• 검색 지역: ${level2Result.districts.map((d) => DISTRICT_NAMES[d]).join(', ')}\n` +
-        `• ${level2Result.notifiedCount}명의 기사님께 추가 알림을 보냈습니다.\n` +
-        `• 추가 비용: +${formatPrice(config.pricing.wideAreaSurcharge)}\n\n` +
-        `조금만 기다려주세요! 🚗`
+        `✅ 광역 매칭이 시작되었습니다!\n\n` +
+        `📍 검색 지역: ${level2Result.districts.map((d) => DISTRICT_NAMES[d]).join(', ')}\n` +
+        `👨‍🔧 ${level2Result.notifiedCount}명의 기사님께 카카오 알림을 보냈습니다.\n` +
+        `💳 추가 비용: +${formatPrice(config.pricing.wideAreaSurcharge)}\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `🔔 진행 상황 안내\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `• 기사님이 수락하면 카카오톡으로 알려드려요\n` +
+        `• 기사님 출발/도착 알림도 카카오톡으로 받으실 수 있어요\n\n` +
+        `⚠️ 기사님 배정 후에는 취소가 어렵습니다.`
       );
     }
   );
