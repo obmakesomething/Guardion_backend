@@ -37,6 +37,18 @@ import {
 } from './modules/payment/index.js';
 import { DISTRICT_NAMES, type SeoulDistrict } from './types/index.js';
 import { acceptMatch } from './modules/matching/index.js';
+import {
+  generateOTP,
+  storeOTP,
+  verifyOTP,
+  getOrCreateCustomerByPhone,
+  getOrCreateCustomerByGoogle,
+  generateToken,
+  verifyToken,
+  getCustomerRequests,
+  linkCustomerToRequest,
+} from './modules/auth/index.js';
+import { sendKakaoAlimtalk } from './modules/solapi/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -827,6 +839,289 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
 
     const status = getMatchingStatus(requestId);
     sendJson(res, 200, { status });
+    return;
+  }
+
+  // =========================================================
+  // AUTH: Send OTP via SMS
+  // =========================================================
+  if (req.method === 'POST' && url.pathname === '/api/auth/send-otp') {
+    try {
+      const body = await readJsonBody(req);
+      const { phone } = body as { phone: string };
+
+      if (!phone || phone.length < 10) {
+        sendJson(res, 400, { success: false, message: '올바른 전화번호를 입력해주세요.' });
+        return;
+      }
+
+      const otp = generateOTP();
+      storeOTP(phone, otp);
+
+      // Send OTP via Solapi SMS
+      const result = await sendKakaoAlimtalk(phone, 'SMS_AUTH', {
+        '#{인증번호}': otp,
+      });
+
+      // For development, also log the OTP
+      console.log(`[Auth] OTP for ${phone}: ${otp}`);
+
+      sendJson(res, 200, { success: true, message: '인증번호가 전송되었습니다.' });
+    } catch (error) {
+      console.error('[Auth] Send OTP error:', error);
+      sendJson(res, 500, { success: false, message: '인증번호 전송에 실패했습니다.' });
+    }
+    return;
+  }
+
+  // =========================================================
+  // AUTH: Verify OTP and login
+  // =========================================================
+  if (req.method === 'POST' && url.pathname === '/api/auth/verify-otp') {
+    try {
+      const body = await readJsonBody(req);
+      const { phone, otp } = body as { phone: string; otp: string };
+
+      if (!phone || !otp) {
+        sendJson(res, 400, { success: false, message: '전화번호와 인증번호가 필요합니다.' });
+        return;
+      }
+
+      const isValid = verifyOTP(phone, otp);
+
+      if (!isValid) {
+        sendJson(res, 400, { success: false, message: '인증번호가 일치하지 않거나 만료되었습니다.' });
+        return;
+      }
+
+      // Create or get customer
+      const customerId = await getOrCreateCustomerByPhone(phone);
+
+      // Link any existing requests to this customer
+      await linkCustomerToRequest(phone, customerId);
+
+      // Generate JWT token
+      const token = generateToken({
+        customerId,
+        phone,
+        authMethod: 'sms',
+      });
+
+      sendJson(res, 200, {
+        success: true,
+        token,
+        customer: { customerId, phone },
+      });
+    } catch (error) {
+      console.error('[Auth] Verify OTP error:', error);
+      sendJson(res, 500, { success: false, message: '인증 처리 중 오류가 발생했습니다.' });
+    }
+    return;
+  }
+
+  // =========================================================
+  // AUTH: Google OAuth redirect
+  // =========================================================
+  if (req.method === 'GET' && url.pathname === '/api/auth/google') {
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    const redirectUri = `${config.urls.baseUrl}/api/auth/google/callback`;
+
+    if (!googleClientId) {
+      res.writeHead(302, { Location: '/login?error=google_not_configured' });
+      res.end();
+      return;
+    }
+
+    const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    authUrl.searchParams.set('client_id', googleClientId);
+    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('scope', 'email profile');
+    authUrl.searchParams.set('access_type', 'offline');
+
+    res.writeHead(302, { Location: authUrl.toString() });
+    res.end();
+    return;
+  }
+
+  // =========================================================
+  // AUTH: Google OAuth callback
+  // =========================================================
+  if (req.method === 'GET' && url.pathname === '/api/auth/google/callback') {
+    try {
+      const code = url.searchParams.get('code');
+      const error = url.searchParams.get('error');
+
+      if (error || !code) {
+        res.writeHead(302, { Location: '/login?error=google_auth_failed' });
+        res.end();
+        return;
+      }
+
+      const googleClientId = process.env.GOOGLE_CLIENT_ID;
+      const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      const redirectUri = `${config.urls.baseUrl}/api/auth/google/callback`;
+
+      // Exchange code for tokens
+      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code,
+          client_id: googleClientId!,
+          client_secret: googleClientSecret!,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code',
+        }),
+      });
+
+      const tokenData = await tokenRes.json() as { access_token: string };
+
+      // Get user info
+      const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+
+      const userData = await userRes.json() as { id: string; email: string; name: string };
+
+      // Create or get customer
+      const customerId = await getOrCreateCustomerByGoogle(userData.id, userData.email, userData.name);
+
+      // Generate JWT token
+      const token = generateToken({
+        customerId,
+        email: userData.email,
+        name: userData.name,
+        authMethod: 'google',
+      });
+
+      // Redirect to my page with token in URL (will be stored in localStorage)
+      res.writeHead(302, { Location: `/my?token=${token}` });
+      res.end();
+    } catch (error) {
+      console.error('[Auth] Google callback error:', error);
+      res.writeHead(302, { Location: '/login?error=google_auth_failed' });
+      res.end();
+    }
+    return;
+  }
+
+  // =========================================================
+  // AUTH: Kakao OAuth redirect
+  // =========================================================
+  if (req.method === 'GET' && url.pathname === '/api/auth/kakao') {
+    const kakaoClientId = process.env.KAKAO_CLIENT_ID;
+    const redirectUri = `${config.urls.baseUrl}/api/auth/kakao/callback`;
+
+    if (!kakaoClientId) {
+      res.writeHead(302, { Location: '/login?error=kakao_not_configured' });
+      res.end();
+      return;
+    }
+
+    const authUrl = new URL('https://kauth.kakao.com/oauth/authorize');
+    authUrl.searchParams.set('client_id', kakaoClientId);
+    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('response_type', 'code');
+
+    res.writeHead(302, { Location: authUrl.toString() });
+    res.end();
+    return;
+  }
+
+  // =========================================================
+  // AUTH: Kakao OAuth callback
+  // =========================================================
+  if (req.method === 'GET' && url.pathname === '/api/auth/kakao/callback') {
+    try {
+      const code = url.searchParams.get('code');
+      const error = url.searchParams.get('error');
+
+      if (error || !code) {
+        res.writeHead(302, { Location: '/login?error=kakao_auth_failed' });
+        res.end();
+        return;
+      }
+
+      const kakaoClientId = process.env.KAKAO_CLIENT_ID;
+      const kakaoClientSecret = process.env.KAKAO_CLIENT_SECRET;
+      const redirectUri = `${config.urls.baseUrl}/api/auth/kakao/callback`;
+
+      // Exchange code for tokens
+      const tokenRes = await fetch('https://kauth.kakao.com/oauth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code,
+          client_id: kakaoClientId!,
+          client_secret: kakaoClientSecret || '',
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code',
+        }),
+      });
+
+      const tokenData = await tokenRes.json() as { access_token: string };
+
+      // Get user info
+      const userRes = await fetch('https://kapi.kakao.com/v2/user/me', {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+
+      const userData = await userRes.json() as {
+        id: number;
+        kakao_account?: { email?: string; profile?: { nickname?: string } };
+      };
+
+      const email = userData.kakao_account?.email || `kakao_${userData.id}@kakao.com`;
+      const name = userData.kakao_account?.profile?.nickname || '카카오 사용자';
+
+      // Create or get customer (reuse Google function with kakao_ prefix)
+      const customerId = await getOrCreateCustomerByGoogle(`kakao_${userData.id}`, email, name);
+
+      // Generate JWT token
+      const token = generateToken({
+        customerId,
+        email,
+        name,
+        authMethod: 'kakao',
+      });
+
+      // Redirect to my page with token in URL
+      res.writeHead(302, { Location: `/my?token=${token}` });
+      res.end();
+    } catch (error) {
+      console.error('[Auth] Kakao callback error:', error);
+      res.writeHead(302, { Location: '/login?error=kakao_auth_failed' });
+      res.end();
+    }
+    return;
+  }
+
+  // =========================================================
+  // CUSTOMER: Get my requests
+  // =========================================================
+  if (req.method === 'GET' && url.pathname === '/api/customer/requests') {
+    try {
+      const authHeader = req.headers['authorization'];
+      const token = authHeader?.replace('Bearer ', '');
+
+      if (!token) {
+        sendJson(res, 401, { error: '로그인이 필요합니다.' });
+        return;
+      }
+
+      const session = verifyToken(token);
+      if (!session) {
+        sendJson(res, 401, { error: '세션이 만료되었습니다.' });
+        return;
+      }
+
+      const requests = await getCustomerRequests(session.customerId);
+      sendJson(res, 200, { requests });
+    } catch (error) {
+      console.error('[Customer] Get requests error:', error);
+      sendJson(res, 500, { error: '요청 조회 중 오류가 발생했습니다.' });
+    }
     return;
   }
 

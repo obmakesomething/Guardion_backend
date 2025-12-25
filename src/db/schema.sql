@@ -64,6 +64,24 @@ CREATE TABLE users (
 CREATE INDEX idx_users_chatgpt_id ON users(chatgpt_user_id);
 
 -- =====================================================
+-- CUSTOMERS (for login/my page)
+-- =====================================================
+CREATE TABLE customers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  phone VARCHAR(20),
+  email VARCHAR(255),
+  name VARCHAR(100),
+  google_id VARCHAR(255),
+  kakao_id VARCHAR(255),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_customers_phone ON customers(phone);
+CREATE INDEX idx_customers_email ON customers(email);
+CREATE INDEX idx_customers_google_id ON customers(google_id);
+
+-- =====================================================
 -- LOCK ANALYSIS RESULTS
 -- =====================================================
 CREATE TABLE lock_analyses (
@@ -85,6 +103,9 @@ CREATE TABLE lock_analyses (
 CREATE TABLE match_requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES users(id),
+  customer_id UUID REFERENCES customers(id),
+  customer_phone VARCHAR(20),
+  customer_address TEXT,
   district seoul_district NOT NULL,
   address_text TEXT,
   location_lat DECIMAL(10, 8),

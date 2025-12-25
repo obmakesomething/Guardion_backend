@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로그인 - klygo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .logo h1 {
+      font-size: 2.5rem;
+      color: #667eea;
+      font-weight: 800;
+    }
+
+    .logo p {
+      color: #666;
+      margin-top: 8px;
+    }
+
+    .tab-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      background: white;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .tab-btn.active {
+      border-color: #667eea;
+      background: #667eea;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .phone-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .phone-group input {
+      flex: 1;
+    }
+
+    .phone-group button {
+      padding: 14px 20px;
+      white-space: nowrap;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #5a6fd6;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e8e8e8;
+    }
+
+    .google-btn {
+      background: white;
+      color: #333;
+      border: 2px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .google-btn:hover {
+      background: #f5f5f5;
+    }
+
+    .google-btn img {
+      width: 20px;
+      height: 20px;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 25px 0;
+      color: #999;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e0e0e0;
+    }
+
+    .divider span {
+      padding: 0 15px;
+      font-size: 14px;
+    }
+
+    .message {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .message.error {
+      background: #ffe0e0;
+      color: #d32f2f;
+      display: block;
+    }
+
+    .message.success {
+      background: #e0ffe0;
+      color: #2e7d32;
+      display: block;
+    }
+
+    .timer {
+      text-align: center;
+      color: #667eea;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <h1>klygo</h1>
+      <p>긴급 도어락 개문 서비스</p>
+    </div>
+
+    <div class="tab-buttons">
+      <button class="tab-btn active" onclick="showTab('sms')">문자 인증</button>
+      <button class="tab-btn" onclick="showTab('google')">간편 로그인</button>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <!-- SMS 인증 -->
+    <div id="sms-tab" class="tab-content active">
+      <div id="sms-step1">
+        <div class="form-group">
+          <label>휴대폰 번호</label>
+          <div class="phone-group">
+            <input type="tel" id="phone" placeholder="010-1234-5678" maxlength="13">
+            <button type="button" class="btn-secondary" onclick="sendOTP()">인증번호 받기</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="sms-step2" class="hidden">
+        <div class="timer" id="timer">05:00</div>
+        <div class="form-group">
+          <label>인증번호 6자리</label>
+          <input type="text" id="otp" placeholder="123456" maxlength="6" inputmode="numeric">
+        </div>
+        <button onclick="verifyOTP()">확인</button>
+        <button class="btn-secondary" style="margin-top: 10px;" onclick="resendOTP()">인증번호 재전송</button>
+      </div>
+    </div>
+
+    <!-- Google/Kakao 로그인 -->
+    <div id="google-tab" class="tab-content">
+      <button class="google-btn" onclick="loginWithGoogle()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+        Google로 계속하기
+      </button>
+
+      <div class="divider"><span>또는</span></div>
+
+      <button style="background: #FEE500; color: #000;" onclick="loginWithKakao()">
+        카카오로 계속하기
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '';
+    let countdownInterval = null;
+
+    function showTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      document.querySelector(`.tab-btn:nth-child(${tab === 'sms' ? 1 : 2})`).classList.add('active');
+      document.getElementById(`${tab}-tab`).classList.add('active');
+    }
+
+    function showMessage(text, type) {
+      const msg = document.getElementById('message');
+      msg.textContent = text;
+      msg.className = `message ${type}`;
+    }
+
+    function formatPhone(value) {
+      const numbers = value.replace(/[^0-9]/g, '');
+      if (numbers.length <= 3) return numbers;
+      if (numbers.length <= 7) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+      return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+    }
+
+    document.getElementById('phone').addEventListener('input', (e) => {
+      e.target.value = formatPhone(e.target.value);
+    });
+
+    async function sendOTP() {
+      const phone = document.getElementById('phone').value.replace(/-/g, '');
+
+      if (phone.length !== 11) {
+        showMessage('올바른 휴대폰 번호를 입력해주세요.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showMessage('인증번호가 전송되었습니다.', 'success');
+          document.getElementById('sms-step1').classList.add('hidden');
+          document.getElementById('sms-step2').classList.remove('hidden');
+          startTimer(300); // 5 minutes
+        } else {
+          showMessage(data.message || '인증번호 전송에 실패했습니다.', 'error');
+        }
+      } catch (err) {
+        showMessage('서버 오류가 발생했습니다.', 'error');
+      }
+    }
+
+    function startTimer(seconds) {
+      let remaining = seconds;
+      const timerEl = document.getElementById('timer');
+
+      if (countdownInterval) clearInterval(countdownInterval);
+
+      countdownInterval = setInterval(() => {
+        const min = Math.floor(remaining / 60);
+        const sec = remaining % 60;
+        timerEl.textContent = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+
+        if (remaining <= 0) {
+          clearInterval(countdownInterval);
+          showMessage('인증 시간이 만료되었습니다. 다시 시도해주세요.', 'error');
+        }
+        remaining--;
+      }, 1000);
+    }
+
+    async function verifyOTP() {
+      const phone = document.getElementById('phone').value.replace(/-/g, '');
+      const otp = document.getElementById('otp').value;
+
+      if (otp.length !== 6) {
+        showMessage('인증번호 6자리를 입력해주세요.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, otp })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          localStorage.setItem('klygo_token', data.token);
+          localStorage.setItem('klygo_customer', JSON.stringify(data.customer));
+          window.location.href = '/my';
+        } else {
+          showMessage(data.message || '인증번호가 일치하지 않습니다.', 'error');
+        }
+      } catch (err) {
+        showMessage('서버 오류가 발생했습니다.', 'error');
+      }
+    }
+
+    function resendOTP() {
+      document.getElementById('otp').value = '';
+      sendOTP();
+    }
+
+    function loginWithGoogle() {
+      // Google OAuth - redirect to backend
+      window.location.href = `${API_BASE}/api/auth/google`;
+    }
+
+    function loginWithKakao() {
+      // Kakao OAuth - redirect to backend
+      window.location.href = `${API_BASE}/api/auth/kakao`;
+    }
+
+    // Check if already logged in
+    const token = localStorage.getItem('klygo_token');
+    if (token) {
+      window.location.href = '/my';
+    }
+  </script>
+</body>
+</html>
