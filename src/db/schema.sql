@@ -1,4 +1,4 @@
--- OpenNow AI Database Schema
+-- klygo Database Schema
 -- Emergency Locksmith Matching Service
 
 -- Enable UUID extension
