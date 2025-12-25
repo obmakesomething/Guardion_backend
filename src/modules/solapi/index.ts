@@ -190,11 +190,13 @@ export function buildCustomerTechAssignedVariables(params: {
   techName: string;
   techPhone: string;
   eta: number;
+  myPageUrl: string;
 }): Record<string, string> {
   return {
     '#{기사님이름}': params.techName,
     '#{기사님연락처}': params.techPhone,
     '#{예상도착시간}': `${params.eta}분`,
+    '#{마이페이지링크}': params.myPageUrl,
   };
 }
 
@@ -204,10 +206,12 @@ export function buildCustomerTechAssignedVariables(params: {
 export function buildCustomerTechDepartedVariables(params: {
   techName: string;
   eta: number;
+  myPageUrl: string;
 }): Record<string, string> {
   return {
     '#{기사님이름}': params.techName,
     '#{예상도착시간}': `${params.eta}분`,
+    '#{마이페이지링크}': params.myPageUrl,
   };
 }
 
@@ -216,9 +220,11 @@ export function buildCustomerTechDepartedVariables(params: {
  */
 export function buildCustomerTechArrivingVariables(params: {
   techName: string;
+  myPageUrl: string;
 }): Record<string, string> {
   return {
     '#{기사님이름}': params.techName,
+    '#{마이페이지링크}': params.myPageUrl,
   };
 }
 
@@ -235,6 +241,8 @@ export function buildCustomerBalanceRequestVariables(params: {
   };
 }
 
+const MY_PAGE_URL = process.env.BASE_URL ? `${process.env.BASE_URL}/my` : 'https://alygo.online/my';
+
 /**
  * Send customer notification - tech assigned
  */
@@ -247,7 +255,7 @@ export async function notifyCustomerTechAssigned(
   const result = await sendKakaoAlimtalk(
     customerPhone,
     TEMPLATE_IDS.TECH_ASSIGNED,
-    buildCustomerTechAssignedVariables({ techName, techPhone, eta })
+    buildCustomerTechAssignedVariables({ techName, techPhone, eta, myPageUrl: MY_PAGE_URL })
   );
   return result !== null;
 }
@@ -263,7 +271,7 @@ export async function notifyCustomerTechDeparted(
   const result = await sendKakaoAlimtalk(
     customerPhone,
     TEMPLATE_IDS.TECH_DEPARTED,
-    buildCustomerTechDepartedVariables({ techName, eta })
+    buildCustomerTechDepartedVariables({ techName, eta, myPageUrl: MY_PAGE_URL })
   );
   return result !== null;
 }
@@ -278,7 +286,7 @@ export async function notifyCustomerTechArriving(
   const result = await sendKakaoAlimtalk(
     customerPhone,
     TEMPLATE_IDS.TECH_ARRIVING,
-    buildCustomerTechArrivingVariables({ techName })
+    buildCustomerTechArrivingVariables({ techName, myPageUrl: MY_PAGE_URL })
   );
   return result !== null;
 }
