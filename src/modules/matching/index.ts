@@ -593,3 +593,57 @@ export function cancelMatch(requestId: string): boolean {
 
   return true;
 }
+
+/**
+ * Cancel a match request with refund option (for customer cancellation)
+ */
+export async function cancelMatchRequest(
+  requestId: string,
+  withRefund: boolean
+): Promise<{ success: boolean; message: string }> {
+  const request = activeMatches.get(requestId);
+  if (!request) {
+    return { success: false, message: '요청을 찾을 수 없습니다.' };
+  }
+
+  // Only allow cancellation for pending/matching status
+  if (!['pending', 'matching'].includes(request.status)) {
+    return { success: false, message: '이미 기사님이 배정되어 취소가 불가능합니다.' };
+  }
+
+  // Check if within 1 minute for refund
+  const elapsedMs = Date.now() - request.createdAt.getTime();
+  const canRefund = elapsedMs < 60000; // 1 minute
+
+  if (withRefund && !canRefund) {
+    return { success: false, message: '1분이 경과하여 환불이 불가능합니다.' };
+  }
+
+  request.status = 'cancelled';
+  activeMatches.set(requestId, request);
+
+  // Update database
+  await query(
+    `UPDATE match_requests SET status = 'cancelled', cancelled_at = NOW() WHERE id = $1`,
+    [requestId]
+  );
+
+  // Process refund if requested and eligible
+  if (withRefund && canRefund) {
+    // TODO: Implement Toss Payments refund API call
+    // For now, just log it
+    console.log(`[Matching] Refund requested for ${requestId}`);
+
+    // Update payment status
+    await query(
+      `UPDATE payments SET status = 'refunded', refunded_at = NOW()
+       WHERE match_request_id = $1 AND type = 'callout' AND status = 'completed'`,
+      [requestId]
+    );
+  }
+
+  return {
+    success: true,
+    message: withRefund ? '취소되었습니다. 환불이 진행됩니다.' : '취소되었습니다.'
+  };
+}

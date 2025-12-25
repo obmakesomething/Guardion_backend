@@ -151,10 +151,47 @@
       text-decoration: none;
       font-weight: 600;
       margin-top: 15px;
+      border: none;
+      cursor: pointer;
     }
 
     .call-btn:hover {
       background: #5a6fd6;
+    }
+
+    .cancel-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background: white;
+      color: #d32f2f;
+      text-align: center;
+      border-radius: 10px;
+      font-weight: 600;
+      margin-top: 10px;
+      border: 2px solid #d32f2f;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .cancel-btn:hover {
+      background: #ffebee;
+    }
+
+    .cancel-btn.no-refund {
+      color: #999;
+      border-color: #ccc;
+    }
+
+    .cancel-btn.no-refund:hover {
+      background: #f5f5f5;
+    }
+
+    .cancel-warning {
+      font-size: 12px;
+      color: #999;
+      text-align: center;
+      margin-top: 8px;
     }
 
     .progress-bar {
@@ -331,6 +368,13 @@
       const district = DISTRICT_NAMES[req.district] || req.district;
       const progressStep = getProgressStep(req.status);
 
+      // Check if cancellable and refundable
+      const createdAt = new Date(req.created_at);
+      const now = new Date();
+      const elapsedMs = now - createdAt;
+      const canCancel = ['pending', 'matching'].includes(req.status);
+      const canRefund = elapsedMs < 60000; // 1 minute
+
       let techInfoHtml = '';
       if (req.tech_name && req.status !== 'matching' && req.status !== 'pending') {
         techInfoHtml = `
@@ -347,6 +391,25 @@
             <a href="tel:${req.tech_phone}" class="call-btn">기사님께 전화하기</a>
           </div>
         `;
+      }
+
+      let cancelHtml = '';
+      if (canCancel) {
+        if (canRefund) {
+          const remainingSec = Math.max(0, Math.floor((60000 - elapsedMs) / 1000));
+          cancelHtml = `
+            <button class="cancel-btn" onclick="cancelRequest('${req.id}', true)">
+              취소하기 (환불 가능 - ${remainingSec}초 남음)
+            </button>
+          `;
+        } else {
+          cancelHtml = `
+            <button class="cancel-btn no-refund" onclick="cancelRequest('${req.id}', false)">
+              취소하기 (환불 불가)
+            </button>
+            <p class="cancel-warning">1분이 경과하여 출장비 환불이 불가능합니다</p>
+          `;
+        }
       }
 
       return `
@@ -385,8 +448,41 @@
           </div>
 
           ${techInfoHtml}
+          ${cancelHtml}
         </div>
       `;
+    }
+
+    async function cancelRequest(requestId, withRefund) {
+      const confirmMsg = withRefund
+        ? '요청을 취소하시겠습니까? 출장비가 환불됩니다.'
+        : '요청을 취소하시겠습니까?\n\n⚠️ 1분이 경과하여 출장비 환불이 불가능합니다.';
+
+      if (!confirm(confirmMsg)) return;
+
+      try {
+        const token = getToken();
+        const res = await fetch(`${API_BASE}/api/customer/cancel`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ requestId, refund: withRefund })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          alert(withRefund ? '취소되었습니다. 환불이 진행됩니다.' : '취소되었습니다.');
+          loadRequests();
+        } else {
+          alert(data.message || '취소 처리에 실패했습니다.');
+        }
+      } catch (err) {
+        console.error('Cancel error:', err);
+        alert('취소 처리 중 오류가 발생했습니다.');
+      }
     }
 
     function formatPhone(phone) {

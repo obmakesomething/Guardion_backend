@@ -1144,6 +1144,69 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
   }
 
   // =========================================================
+  // CUSTOMER: Cancel request
+  // =========================================================
+  if (req.method === 'POST' && url.pathname === '/api/customer/cancel') {
+    try {
+      const authHeader = req.headers['authorization'];
+      const token = authHeader?.replace('Bearer ', '');
+
+      if (!token) {
+        sendJson(res, 401, { error: '로그인이 필요합니다.' });
+        return;
+      }
+
+      const session = verifyToken(token);
+      if (!session) {
+        sendJson(res, 401, { error: '세션이 만료되었습니다.' });
+        return;
+      }
+
+      const body = await readJsonBody(req);
+      const { requestId, refund } = body as { requestId: string; refund: boolean };
+
+      if (!requestId) {
+        sendJson(res, 400, { success: false, message: '요청 ID가 필요합니다.' });
+        return;
+      }
+
+      // Get match request
+      const matchRequest = getMatchRequest(requestId);
+      if (!matchRequest) {
+        sendJson(res, 404, { success: false, message: '요청을 찾을 수 없습니다.' });
+        return;
+      }
+
+      // Check if cancellable (only pending or matching status)
+      if (!['pending', 'matching'].includes(matchRequest.status)) {
+        sendJson(res, 400, {
+          success: false,
+          message: '이미 기사님이 배정되어 취소가 불가능합니다.'
+        });
+        return;
+      }
+
+      // Cancel the request
+      const { cancelMatchRequest } = await import('./modules/matching/index.js');
+      const cancelResult = await cancelMatchRequest(requestId, refund);
+
+      if (cancelResult.success) {
+        sendJson(res, 200, {
+          success: true,
+          message: refund ? '취소되었습니다. 환불이 진행됩니다.' : '취소되었습니다.',
+          refunded: refund
+        });
+      } else {
+        sendJson(res, 400, { success: false, message: cancelResult.message });
+      }
+    } catch (error) {
+      console.error('[Customer] Cancel error:', error);
+      sendJson(res, 500, { error: '취소 처리 중 오류가 발생했습니다.' });
+    }
+    return;
+  }
+
+  // =========================================================
   // Serve static files from /public
   // =========================================================
   if (req.method === 'GET') {
