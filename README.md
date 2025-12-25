@@ -148,5 +148,5 @@ Private - All Rights Reserved
 
 ## 연락처
 
-- 이메일: support@alygo.online
-- 기사님 문의: tech@alygo.online
+- 이메일: support@klygo.online
+- 기사님 문의: tech@klygo.online

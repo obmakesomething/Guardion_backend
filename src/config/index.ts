@@ -20,8 +20,8 @@ export const config = {
     clientKey: process.env.TOSS_CLIENT_KEY ?? '',
     secretKey: process.env.TOSS_SECRET_KEY ?? '',
     webhookSecret: process.env.TOSS_WEBHOOK_SECRET ?? '',
-    successUrl: process.env.TOSS_SUCCESS_URL ?? 'https://alygo.online/payment/success',
-    failUrl: process.env.TOSS_FAIL_URL ?? 'https://alygo.online/payment/fail',
+    successUrl: process.env.TOSS_SUCCESS_URL ?? 'https://klygo.online/payment/success',
+    failUrl: process.env.TOSS_FAIL_URL ?? 'https://klygo.online/payment/fail',
   },
 
   // Matching Engine
@@ -57,9 +57,9 @@ export const config = {
 
   // URLs
   urls: {
-    baseUrl: process.env.BASE_URL ?? 'https://alygo.online',
-    techAcceptPage: process.env.TECH_ACCEPT_URL ?? 'https://alygo.online/tech',
-    paymentPage: process.env.PAYMENT_URL ?? 'https://alygo.online/pay',
+    baseUrl: process.env.BASE_URL ?? 'https://klygo.online',
+    techAcceptPage: process.env.TECH_ACCEPT_URL ?? 'https://klygo.online/tech',
+    paymentPage: process.env.PAYMENT_URL ?? 'https://klygo.online/pay',
   },
 } as const;
 

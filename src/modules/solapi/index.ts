@@ -241,7 +241,7 @@ export function buildCustomerBalanceRequestVariables(params: {
   };
 }
 
-const MY_PAGE_URL = process.env.BASE_URL ? `${process.env.BASE_URL}/my` : 'https://alygo.online/my';
+const MY_PAGE_URL = process.env.BASE_URL ? `${process.env.BASE_URL}/my` : 'https://klygo.online/my';
 
 /**
  * Send customer notification - tech assigned
