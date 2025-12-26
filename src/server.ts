@@ -276,7 +276,9 @@ function createklygoServer() {
       description: `출장비 ${formatPrice(config.pricing.calloutFee)}를 결제합니다. 결제 완료 후 기사님 매칭이 시작됩니다.`,
       inputSchema: payCalloutDepositSchema,
       annotations: {
+        readOnlyHint: false,
         openWorldHint: true,
+        destructiveHint: true,
       },
       _meta: {
         'openai/outputTemplate': 'ui://widget/klygo.html',
@@ -327,6 +329,7 @@ function createklygoServer() {
       description: '출장비 결제 완료 후 기사님을 호출합니다. 단계별 확장 매칭을 통해 가장 가까운 기사님을 찾습니다.',
       inputSchema: requestSmartMatchSchema,
       annotations: {
+        readOnlyHint: false,
         openWorldHint: true,
         destructiveHint: true,
       },
@@ -478,6 +481,7 @@ function createklygoServer() {
       description: `광역 매칭을 위한 추가 비용(+${formatPrice(config.pricing.wideAreaSurcharge)})을 승인합니다.`,
       inputSchema: approveSurchargeSchema,
       annotations: {
+        readOnlyHint: false,
         openWorldHint: true,
       },
       _meta: {
@@ -543,7 +547,9 @@ function createklygoServer() {
       description: '기사님이 입력한 잔금을 결제합니다. 작업 완료 후 기사님이 전송한 금액을 확인하고 결제해주세요.',
       inputSchema: payFinalBalanceSchema,
       annotations: {
+        readOnlyHint: false,
         openWorldHint: true,
+        destructiveHint: true,
       },
       _meta: {
         'openai/outputTemplate': 'ui://widget/klygo.html',
