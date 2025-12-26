@@ -867,6 +867,50 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
   }
 
   // =========================================================
+  // AUTH: Demo account login (for OpenAI reviewers)
+  // =========================================================
+  if (req.method === 'POST' && url.pathname === '/api/auth/demo') {
+    try {
+      const body = await readJsonBody(req);
+      const { email, password } = body as { email: string; password: string };
+
+      // Demo credentials for OpenAI app review
+      const DEMO_EMAIL = 'reviewer@openai.com';
+      const DEMO_PASSWORD = 'klygo-demo-2024';
+
+      if (email !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
+        sendJson(res, 401, { success: false, message: '잘못된 인증 정보입니다.' });
+        return;
+      }
+
+      // Generate demo customer ID (consistent for demo account)
+      const demoCustomerId = 'demo-reviewer-openai-001';
+
+      // Generate JWT token
+      const token = generateToken({
+        customerId: demoCustomerId,
+        email: DEMO_EMAIL,
+        name: 'OpenAI Reviewer',
+        authMethod: 'google',
+      });
+
+      sendJson(res, 200, {
+        success: true,
+        token,
+        customer: {
+          customerId: demoCustomerId,
+          email: DEMO_EMAIL,
+          name: 'OpenAI Reviewer',
+        },
+      });
+    } catch (error) {
+      console.error('[Auth] Demo login error:', error);
+      sendJson(res, 500, { success: false, message: '로그인 처리 중 오류가 발생했습니다.' });
+    }
+    return;
+  }
+
+  // =========================================================
   // AUTH: Send OTP via SMS
   // =========================================================
   if (req.method === 'POST' && url.pathname === '/api/auth/send-otp') {
