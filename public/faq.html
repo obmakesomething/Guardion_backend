@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>자주 묻는 질문 - klygo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      line-height: 1.6;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 1.5rem; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .faq-item {
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .faq-question {
+      padding: 16px 20px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .faq-question:hover { background: #f8f9fa; }
+    .faq-answer {
+      padding: 0 20px 16px;
+      color: #666;
+      display: none;
+    }
+    .faq-item.active .faq-answer { display: block; }
+    .faq-item.active .faq-question::after { content: '−'; }
+    .faq-question::after { content: '+'; font-size: 1.2rem; color: #667eea; }
+    .notice {
+      background: #fff3e0;
+      border: 1px solid #ffcc80;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 20px;
+      font-size: 14px;
+      color: #e65100;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>자주 묻는 질문</h1>
+  </div>
+  <div class="container">
+    <div class="faq-item">
+      <div class="faq-question">비용은 얼마나 드나요?</div>
+      <div class="faq-answer">
+        일반적으로 출장비 3~5만원, 작업비 5~15만원 범위입니다.
+        도어락 종류, 시간대(야간/주말), 작업 난이도에 따라 달라집니다.
+        반드시 작업 전 견적을 확인하세요.
+      </div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-question">얼마나 빨리 오나요?</div>
+      <div class="faq-answer">
+        지역과 시간대에 따라 다르지만, 보통 30분~1시간 내 도착합니다.
+        심야/주말에는 더 오래 걸릴 수 있습니다.
+      </div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-question">신분증이 왜 필요한가요?</div>
+      <div class="faq-answer">
+        불법 침입 방지를 위해 본인 확인이 필요합니다.
+        주민등록증, 운전면허증, 또는 임대차계약서 등으로 확인합니다.
+      </div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-question">도어락이 파손되나요?</div>
+      <div class="faq-answer">
+        대부분 무파괴 개문이 가능하지만, 일부 고급 도어락은
+        파손 개문이 불가피할 수 있습니다. 이 경우 새 도어락 설치 비용이
+        추가됩니다. 작업 전 반드시 확인하세요.
+      </div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-question">바가지 요금은 어떻게 피하나요?</div>
+      <div class="faq-answer">
+        1. 작업 전 반드시 견적을 서면/문자로 받으세요<br>
+        2. 추가비 항목(야간, 파손, 출장거리)을 미리 확인하세요<br>
+        3. 불합리한 요금은 소비자원(1372)에 신고할 수 있습니다
+      </div>
+    </div>
+    <div class="notice">
+      본 페이지는 일반적인 정보 제공 목적이며, 특정 업체의 서비스를
+      보증하거나 추천하지 않습니다.
+    </div>
+  </div>
+  <script>
+    document.querySelectorAll('.faq-question').forEach(q => {
+      q.addEventListener('click', () => {
+        q.parentElement.classList.toggle('active');
+      });
+    });
+  </script>
+</body>
+</html>

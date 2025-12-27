@@ -49,12 +49,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // ============================================================
-// External URLs for dispatch (outside ChatGPT app)
+// Information URLs (NOT order/dispatch - info only)
 // ============================================================
-const EXTERNAL_URLS = {
-  kakaoChannel: 'https://pf.kakao.com/_klygo',  // 카카오톡 채널
-  webDispatch: 'https://klygo.online/dispatch',  // 웹 출동 요청
-  phoneCall: 'tel:1588-0000',  // 전화 상담
+const INFO_URLS = {
+  faq: 'https://klygo.online/faq',          // 자주 묻는 질문
+  safetyGuide: 'https://klygo.online/guide', // 안전 가이드
+  priceInfo: 'https://klygo.online/pricing', // 가격 안내 (범위)
 };
 
 // Helper: Read request body as JSON
@@ -311,11 +311,11 @@ function createklygoServer() {
   server.registerTool(
     'get_recommendation',
     {
-      title: '서비스 추천',
-      description: '상황 분석 결과를 바탕으로 DIY/기사호출/긴급 중 적절한 서비스를 추천하고, 외부 채널로 연결합니다.',
+      title: '상황별 안내',
+      description: '상황 분석 결과를 바탕으로 DIY 가능 여부, 일반적 비용 범위, 주의사항을 안내합니다. 업체 연결/예약/배차/결제는 제공하지 않습니다.',
       inputSchema: getRecommendationSchema,
       annotations: {
-        readOnlyHint: true,  // 읽기 전용 - 배차/결제는 외부에서
+        readOnlyHint: true,  // 읽기 전용 - 정보 제공만
       },
     },
     async (args) => {
@@ -352,7 +352,7 @@ function createklygoServer() {
         recommendation: {
           level,
           summary,
-          externalUrl: EXTERNAL_URLS.kakaoChannel,
+          externalUrl: INFO_URLS.faq,
         },
       };
 
@@ -370,51 +370,63 @@ function createklygoServer() {
           `⚠️ 무리한 시도 시 도어락이 손상될 수 있습니다.`,
         ],
         technician: [
-          `👨‍🔧 기사님 호출 권장`,
+          `👨‍🔧 전문 기사 필요`,
           ``,
-          `전문 기사님의 도움이 필요한 상황입니다.`,
+          `이 상황은 전문 기사의 도움이 필요해 보입니다.`,
           ``,
-          `• 예상 비용: ${formatPrice(config.pricing.calloutFee + 50000)} ~ ${formatPrice(config.pricing.calloutFee + 120000)}`,
-          `• 예상 시간: 도착 후 15~40분 작업`,
+          `━━━━━━━━━━━━━━━━━━━━━━`,
+          `💰 일반적인 비용 범위 (참고용)`,
+          `━━━━━━━━━━━━━━━━━━━━━━`,
+          `• 출장비: 3~4만원대`,
+          `• 작업비: 5~12만원대 (난이도별 상이)`,
           ``,
-          `※ 정확한 비용은 현장에서 안내됩니다.`,
+          `※ 본 금액은 정보 제공용 범위이며,`,
+          `  특정 업체의 견적/오퍼가 아닙니다.`,
         ],
         emergency: [
-          `🚨 긴급 출동 필요`,
+          `🚨 긴급 상황 안내`,
           ``,
           `빠른 조치가 필요한 상황입니다.`,
           ``,
-          `• 야간/주말 할증이 적용될 수 있습니다`,
-          `• 가장 가까운 기사님을 우선 배정합니다`,
+          `• 야간/주말에는 할증이 적용될 수 있습니다`,
+          `• 안전상 문제가 있다면 119에 먼저 연락하세요`,
           ``,
-          `※ 안전상 문제가 있다면 119에 먼저 연락하세요.`,
+          `━━━━━━━━━━━━━━━━━━━━━━`,
+          `💰 일반적인 비용 범위 (참고용)`,
+          `━━━━━━━━━━━━━━━━━━━━━━`,
+          `• 출장비: 3~5만원대 (야간 할증 포함 시)`,
+          `• 작업비: 5~15만원대`,
+          ``,
+          `※ 본 금액은 정보 제공용 범위이며,`,
+          `  특정 업체의 견적/오퍼가 아닙니다.`,
         ],
       };
 
-      const areaInfo = args.roughArea ? `\n📍 지역: ${args.roughArea}` : '';
-
-      const externalCTA = [
+      // 정보 제공용 안내 (주문/배차 유도 아님)
+      const infoSection = [
         ``,
         `━━━━━━━━━━━━━━━━━━━━━━`,
-        `📱 서비스 요청 방법`,
+        `📚 추가 정보`,
         `━━━━━━━━━━━━━━━━━━━━━━`,
         ``,
-        `아래 채널에서 출동을 요청하실 수 있습니다:`,
-        ``,
-        `💬 카카오톡 상담: ${EXTERNAL_URLS.kakaoChannel}`,
-        `🌐 웹 출동 요청: ${EXTERNAL_URLS.webDispatch}`,
-        `📞 전화 상담: ${EXTERNAL_URLS.phoneCall}`,
+        `• 자주 묻는 질문: ${INFO_URLS.faq}`,
+        `• 안전 가이드: ${INFO_URLS.safetyGuide}`,
+        `• 가격 구성 안내: ${INFO_URLS.priceInfo}`,
         ``,
         `━━━━━━━━━━━━━━━━━━━━━━`,
-        `⚠️ 안내사항`,
+        `⚠️ 중요 안내`,
         `━━━━━━━━━━━━━━━━━━━━━━`,
-        `• 이 앱에서는 출동을 확정하지 않습니다`,
-        `• 배차, ETA, 결제는 외부 채널에서 진행됩니다`,
-        `• 정확한 주소는 외부 채널에서 입력해주세요`,
-        areaInfo,
+        `• 본 앱은 정보 제공 목적이며,`,
+        `  업체 연결/예약/배차/결제를 하지 않습니다.`,
+        `• 실제 서비스 이용은 별도 채널을 통해 진행하세요.`,
+        ``,
+        `🔒 바가지 방지 팁`,
+        `• 작업 전 반드시 견적을 확인하세요`,
+        `• 추가비 항목(파손/심야 등)을 미리 문의하세요`,
+        `• 불합리한 요금은 소비자원에 신고 가능합니다`,
       ];
 
-      const message = [...levelMessages[level], ...externalCTA].filter(Boolean).join('\n');
+      const message = [...levelMessages[level], ...infoSection].filter(Boolean).join('\n');
 
       return buildWidgetResponse(message);
     }
@@ -454,9 +466,9 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
       service: 'klygo',
       status: 'healthy',
       version: '2.0.0',
-      description: 'Emergency locksmith triage service',
-      note: 'Dispatch and payment are handled externally',
-      externalChannels: EXTERNAL_URLS,
+      description: 'Emergency locksmith information service',
+      note: 'Information only - no dispatch/booking/payment',
+      infoPages: INFO_URLS,
     }));
     return;
   }
@@ -977,19 +989,22 @@ httpServer.listen(port, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
-║   🔓 klygo v2.0 - 긴급 개문 서비스 (트리아지)            ║
+║   🔓 klygo v2.0 - 긴급 개문 정보 서비스                  ║
 ║                                                               ║
 ║   MCP Server: http://localhost:${port}${MCP_PATH.padEnd(28)}║
 ║   Health:     http://localhost:${port}/health${' '.repeat(22)}║
 ║                                                               ║
-║   🛠️  ChatGPT 앱 도구 (트리아지 전용):                       ║
-║   1. assess_situation - 상황 평가                             ║
-║   2. analyze_lock     - 도어락 분석                           ║
-║   3. get_recommendation - 서비스 추천 + 외부 연결             ║
+║   🛠️  ChatGPT 앱 도구 (정보 제공 전용):                      ║
+║   1. assess_situation   - 상황 평가                           ║
+║   2. analyze_lock       - 도어락 분석                         ║
+║   3. get_recommendation - 상황별 안내                         ║
 ║                                                               ║
-║   📱 배차/결제는 외부 채널에서:                               ║
-║   • 카카오톡: ${EXTERNAL_URLS.kakaoChannel.padEnd(41)}║
-║   • 웹: ${EXTERNAL_URLS.webDispatch.padEnd(47)}║
+║   📚 정보 페이지:                                             ║
+║   • FAQ: ${INFO_URLS.faq.padEnd(47)}║
+║   • 안전 가이드: ${INFO_URLS.safetyGuide.padEnd(39)}║
+║   • 가격 안내: ${INFO_URLS.priceInfo.padEnd(41)}║
+║                                                               ║
+║   ⚠️  본 앱은 업체연결/예약/배차/결제를 하지 않습니다       ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
   `);
