@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>출동 요청 - klygo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .header h1 { font-size: 1.5rem; margin-bottom: 5px; }
+    .header p { opacity: 0.9; font-size: 14px; }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .card h3 {
+      font-size: 16px;
+      margin-bottom: 16px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .form-group label span {
+      color: #d32f2f;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 10px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+    }
+
+    .checkbox-group label {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .price-summary {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .price-row:last-child {
+      margin-bottom: 0;
+      padding-top: 8px;
+      border-top: 1px solid #e0e0e0;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .price-row .label { color: #666; }
+    .price-row .value { color: #333; }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .btn:hover { background: #5a6fd6; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    .notice {
+      background: #fff3e0;
+      border: 1px solid #ffcc80;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 13px;
+      color: #e65100;
+      line-height: 1.6;
+    }
+
+    .notice strong { display: block; margin-bottom: 6px; }
+
+    .step-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .step {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #e0e0e0;
+    }
+
+    .step.active { background: #667eea; }
+    .step.completed { background: #4caf50; }
+
+    .hidden { display: none !important; }
+
+    .success-message {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .success-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .success-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .success-text {
+      color: #666;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>klygo</h1>
+    <p>긴급 도어락 개문 서비스</p>
+  </div>
+
+  <div class="container">
+    <div class="step-indicator">
+      <div class="step active" id="step1-dot"></div>
+      <div class="step" id="step2-dot"></div>
+      <div class="step" id="step3-dot"></div>
+    </div>
+
+    <!-- Step 1: 정보 입력 -->
+    <div id="step1">
+      <div class="card">
+        <h3>📍 출동 정보 입력</h3>
+
+        <div class="form-group">
+          <label>연락처 <span>*</span></label>
+          <input type="tel" id="phone" placeholder="010-1234-5678" maxlength="13">
+        </div>
+
+        <div class="form-group">
+          <label>주소 <span>*</span></label>
+          <input type="text" id="address" placeholder="서울시 성동구 왕십리로 123">
+        </div>
+
+        <div class="form-group">
+          <label>상세주소</label>
+          <input type="text" id="addressDetail" placeholder="아파트 동/호수, 건물명 등">
+        </div>
+
+        <div class="form-group">
+          <label>도어락 종류</label>
+          <select id="lockType">
+            <option value="digital">디지털 도어락</option>
+            <option value="mechanical">일반 열쇠 (기계식)</option>
+            <option value="smart">스마트락 (지문/앱)</option>
+            <option value="padlock">자물쇠</option>
+            <option value="unknown">잘 모르겠음</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>추가 메모</label>
+          <textarea id="notes" placeholder="공동현관 비밀번호, 주차 정보, 특이사항 등"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="checkbox-group">
+          <input type="checkbox" id="agreeTerms">
+          <label for="agreeTerms">
+            본인 거주지임을 확인하며, 신분증 지참에 동의합니다.
+            기사님이 현장에서 신분 확인을 요청할 수 있습니다.
+          </label>
+        </div>
+      </div>
+
+      <button class="btn" onclick="goToStep2()">다음: 결제 정보 확인</button>
+    </div>
+
+    <!-- Step 2: 결제 확인 -->
+    <div id="step2" class="hidden">
+      <div class="card">
+        <h3>💳 결제 정보 확인</h3>
+
+        <div class="price-summary">
+          <div class="price-row">
+            <span class="label">출장비 (선결제)</span>
+            <span class="value">₩35,000</span>
+          </div>
+          <div class="price-row">
+            <span class="label">작업비 (현장 결제)</span>
+            <span class="value">₩50,000 ~ ₩120,000</span>
+          </div>
+          <div class="price-row">
+            <span class="label">선결제 금액</span>
+            <span class="value" style="color: #667eea;">₩35,000</span>
+          </div>
+        </div>
+
+        <div class="notice">
+          <strong>안내사항</strong>
+          • 출장비는 기사님 배정 시 확정됩니다<br>
+          • 작업비는 현장에서 확인 후 결제합니다<br>
+          • 기사님 도착 후 취소 시 출장비 환불 불가
+        </div>
+      </div>
+
+      <button class="btn" onclick="submitRequest()">결제 및 출동 요청</button>
+      <button class="btn" style="background: #f5f5f5; color: #666; margin-top: 10px;" onclick="goToStep1()">이전으로</button>
+    </div>
+
+    <!-- Step 3: 완료 -->
+    <div id="step3" class="hidden">
+      <div class="card">
+        <div class="success-message">
+          <div class="success-icon">✅</div>
+          <div class="success-title">출동 요청 완료!</div>
+          <div class="success-text">
+            결제 완료 후 기사님 매칭이 시작됩니다.<br>
+            진행 상황은 카카오톡으로 안내됩니다.
+          </div>
+        </div>
+
+        <div class="price-summary">
+          <div class="price-row">
+            <span class="label">요청 번호</span>
+            <span class="value" id="requestIdDisplay">-</span>
+          </div>
+          <div class="price-row">
+            <span class="label">연락처</span>
+            <span class="value" id="phoneDisplay">-</span>
+          </div>
+          <div class="price-row">
+            <span class="label">주소</span>
+            <span class="value" id="addressDisplay">-</span>
+          </div>
+        </div>
+      </div>
+
+      <a id="paymentLink" href="#" class="btn" style="display: block; text-align: center; text-decoration: none;">
+        결제하기 (Toss)
+      </a>
+
+      <button class="btn" style="background: #FEE500; color: #000; margin-top: 10px;" onclick="openKakao()">
+        카카오톡으로 문의하기
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '';
+
+    function formatPhone(value) {
+      const numbers = value.replace(/[^0-9]/g, '');
+      if (numbers.length <= 3) return numbers;
+      if (numbers.length <= 7) return numbers.slice(0, 3) + '-' + numbers.slice(3);
+      return numbers.slice(0, 3) + '-' + numbers.slice(3, 7) + '-' + numbers.slice(7, 11);
+    }
+
+    document.getElementById('phone').addEventListener('input', (e) => {
+      e.target.value = formatPhone(e.target.value);
+    });
+
+    function goToStep1() {
+      document.getElementById('step1').classList.remove('hidden');
+      document.getElementById('step2').classList.add('hidden');
+      document.getElementById('step1-dot').classList.add('active');
+      document.getElementById('step2-dot').classList.remove('active');
+    }
+
+    function goToStep2() {
+      const phone = document.getElementById('phone').value.replace(/-/g, '');
+      const address = document.getElementById('address').value;
+      const agree = document.getElementById('agreeTerms').checked;
+
+      if (!phone || phone.length < 10) {
+        alert('올바른 연락처를 입력해주세요.');
+        return;
+      }
+      if (!address) {
+        alert('주소를 입력해주세요.');
+        return;
+      }
+      if (!agree) {
+        alert('본인 거주지 확인 및 신분증 지참에 동의해주세요.');
+        return;
+      }
+
+      document.getElementById('step1').classList.add('hidden');
+      document.getElementById('step2').classList.remove('hidden');
+      document.getElementById('step1-dot').classList.remove('active');
+      document.getElementById('step1-dot').classList.add('completed');
+      document.getElementById('step2-dot').classList.add('active');
+    }
+
+    async function submitRequest() {
+      const phone = document.getElementById('phone').value.replace(/-/g, '');
+      const address = document.getElementById('address').value;
+      const addressDetail = document.getElementById('addressDetail').value;
+      const lockType = document.getElementById('lockType').value;
+      const notes = document.getElementById('notes').value;
+
+      const fullAddress = addressDetail ? address + ' ' + addressDetail : address;
+
+      try {
+        const res = await fetch(API_BASE + '/api/dispatch/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone,
+            address: fullAddress,
+            lockType,
+            notes
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          document.getElementById('step2').classList.add('hidden');
+          document.getElementById('step3').classList.remove('hidden');
+          document.getElementById('step2-dot').classList.remove('active');
+          document.getElementById('step2-dot').classList.add('completed');
+          document.getElementById('step3-dot').classList.add('active');
+
+          document.getElementById('requestIdDisplay').textContent = data.requestId.slice(0, 8) + '...';
+          document.getElementById('phoneDisplay').textContent = formatPhone(phone);
+          document.getElementById('addressDisplay').textContent = fullAddress.length > 20
+            ? fullAddress.slice(0, 20) + '...'
+            : fullAddress;
+          document.getElementById('paymentLink').href = data.payment.checkoutUrl;
+        } else {
+          alert(data.error || '요청 처리에 실패했습니다.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('서버 오류가 발생했습니다.');
+      }
+    }
+
+    function openKakao() {
+      window.open('https://pf.kakao.com/_klygo', '_blank');
+    }
+
+    // URL 파라미터로 ChatGPT에서 넘어온 정보 자동 입력
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('area')) {
+      document.getElementById('address').value = params.get('area');
+    }
+    if (params.get('type')) {
+      document.getElementById('lockType').value = params.get('type');
+    }
+  </script>
+</body>
+</html>
