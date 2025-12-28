@@ -718,6 +718,60 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
   }
 
   // =========================================================
+  // SUPPORT: Customer support form submission
+  // =========================================================
+  if (req.method === 'POST' && url.pathname === '/api/support/submit') {
+    try {
+      const body = await readJsonBody(req);
+      const { name, contact, type, message } = body as {
+        name: string;
+        contact: string;
+        type: string;
+        message: string;
+      };
+
+      if (!name || !contact || !message) {
+        sendJson(res, 400, { success: false, error: '필수 정보가 누락되었습니다.' });
+        return;
+      }
+
+      // Log support request (will be sent to email via external service)
+      const supportRequest = {
+        id: `SUP-${Date.now()}`,
+        name,
+        contact,
+        type,
+        message,
+        createdAt: new Date().toISOString(),
+      };
+
+      console.log('[Support] New support request:', JSON.stringify(supportRequest, null, 2));
+
+      // Send email notification via Solapi (if configured) or just log
+      try {
+        // For now, just log - can integrate email service later
+        // In production: use nodemailer, SendGrid, or Solapi SMS
+        console.log(`[Support] Email would be sent to: daepop98@gmail.com`);
+        console.log(`[Support] From: ${name} <${contact}>`);
+        console.log(`[Support] Type: ${type}`);
+        console.log(`[Support] Message: ${message}`);
+      } catch (emailError) {
+        console.error('[Support] Failed to send email:', emailError);
+      }
+
+      sendJson(res, 200, {
+        success: true,
+        message: '문의가 접수되었습니다.',
+        ticketId: supportRequest.id,
+      });
+    } catch (error) {
+      console.error('[Support] Submit error:', error);
+      sendJson(res, 500, { success: false, error: '문의 접수 중 오류가 발생했습니다.' });
+    }
+    return;
+  }
+
+  // =========================================================
   // AUTH: Demo account login (for OpenAI reviewers)
   // =========================================================
   if (req.method === 'POST' && url.pathname === '/api/auth/demo') {

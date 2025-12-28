@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo Guide - klygo ChatGPT App</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      line-height: 1.6;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 32px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 1.8rem; margin-bottom: 8px; }
+    .header p { opacity: 0.9; font-size: 14px; }
+    .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+    .intro {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .intro h2 { color: #333; margin-bottom: 12px; }
+    .intro p { color: #666; }
+
+    .disclaimer {
+      background: #fff3e0;
+      border: 2px solid #ff9800;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      color: #e65100;
+    }
+
+    .step {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      display: flex;
+      gap: 20px;
+    }
+    .step-number {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    .step-content { flex: 1; }
+    .step-content h3 { color: #333; margin-bottom: 8px; }
+    .step-content p { color: #666; margin-bottom: 12px; }
+
+    .example-chat {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 12px 0;
+    }
+    .chat-user {
+      background: #667eea;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 16px 16px 4px 16px;
+      margin-bottom: 12px;
+      max-width: 80%;
+      margin-left: auto;
+    }
+    .chat-assistant {
+      background: white;
+      border: 1px solid #e0e0e0;
+      padding: 10px 14px;
+      border-radius: 16px 16px 16px 4px;
+      margin-bottom: 12px;
+      max-width: 80%;
+    }
+
+    .tools-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin: 16px 0;
+    }
+    .tool-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+      border-left: 4px solid #667eea;
+    }
+    .tool-card h4 { color: #333; margin-bottom: 4px; }
+    .tool-card p { color: #666; font-size: 14px; }
+    .tool-badge {
+      display: inline-block;
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .info-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .info-link {
+      background: #e3f2fd;
+      padding: 12px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #1565c0;
+      text-align: center;
+      transition: background 0.3s;
+    }
+    .info-link:hover { background: #bbdefb; }
+
+    .footer {
+      text-align: center;
+      padding: 24px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>klygo ChatGPT App Demo</h1>
+    <p>Emergency Locksmith Information Service</p>
+  </div>
+
+  <div class="container">
+    <div class="intro">
+      <h2>What is klygo?</h2>
+      <p>klygo is an informational ChatGPT app that helps users understand their door lock situation when they're locked out. The app provides guidance on lock types, estimated difficulty, general cost ranges, and safety tips.</p>
+
+      <div class="disclaimer">
+        <strong>Important:</strong> This app is purely informational. It does NOT provide:
+        <ul style="margin-top: 8px; padding-left: 20px;">
+          <li>Locksmith booking or dispatch</li>
+          <li>Payment processing</li>
+          <li>Direct connections to service providers</li>
+          <li>Precise location requests</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="intro">
+      <h2>Available Tools (MCP)</h2>
+      <p>The app provides three read-only tools for information gathering:</p>
+
+      <div class="tools-list">
+        <div class="tool-card">
+          <h4>assess_situation</h4>
+          <p>Evaluates the user's lockout situation and determines if professional help is needed.</p>
+          <span class="tool-badge">Read-Only</span>
+        </div>
+        <div class="tool-card">
+          <h4>analyze_lock</h4>
+          <p>Analyzes lock type from description/photo and provides difficulty assessment.</p>
+          <span class="tool-badge">Read-Only</span>
+        </div>
+        <div class="tool-card">
+          <h4>get_recommendation</h4>
+          <p>Provides general guidance, cost ranges, and safety tips based on the situation.</p>
+          <span class="tool-badge">Read-Only</span>
+        </div>
+      </div>
+    </div>
+
+    <h2 style="margin: 24px 0 16px; color: #333;">Demo Walkthrough</h2>
+
+    <div class="step">
+      <div class="step-number">1</div>
+      <div class="step-content">
+        <h3>User Describes Their Situation</h3>
+        <p>The user explains their lockout situation to ChatGPT.</p>
+        <div class="example-chat">
+          <div class="chat-user">
+            집 현관문이 안 열려요. 디지털 도어락인데 비밀번호도 안 먹히고 배터리도 방금 갈았어요.
+          </div>
+          <div class="chat-assistant">
+            상황을 파악해 드리겠습니다. 디지털 도어락이고 비밀번호가 작동하지 않으며 배터리를 교체했는데도 동작하지 않는다고 하셨네요. 몇 가지 확인해 볼게요...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">2</div>
+      <div class="step-content">
+        <h3>App Assesses the Situation</h3>
+        <p>Using the <code>assess_situation</code> tool, the app evaluates whether DIY solutions are possible or if professional help is recommended.</p>
+        <div class="example-chat">
+          <div class="chat-assistant">
+            <strong>상황 평가 결과:</strong><br><br>
+            • 도어락 종류: 디지털 도어락 (푸시풀 타입 추정)<br>
+            • DIY 가능성: 낮음<br>
+            • 권장 조치: 전문 기사 호출 권장<br><br>
+            배터리 교체 후에도 작동하지 않는다면 내부 기판 문제이거나 잠금 메커니즘 고장일 수 있습니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">3</div>
+      <div class="step-content">
+        <h3>App Analyzes the Lock Type</h3>
+        <p>Using the <code>analyze_lock</code> tool, the app provides information about the lock type and expected difficulty.</p>
+        <div class="example-chat">
+          <div class="chat-assistant">
+            <strong>도어락 분석:</strong><br><br>
+            • 예상 종류: 푸시풀 디지털 도어락<br>
+            • 작업 난이도: 중간~높음<br>
+            • 비파괴 개문 가능성: 상황에 따라 다름<br><br>
+            ⚠️ 참고: 정확한 분석을 위해서는 현장 확인이 필요합니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">4</div>
+      <div class="step-content">
+        <h3>App Provides General Guidance</h3>
+        <p>Using the <code>get_recommendation</code> tool, the app shares general cost ranges and safety tips.</p>
+        <div class="example-chat">
+          <div class="chat-assistant">
+            <strong>일반적인 안내:</strong><br><br>
+            📊 <strong>비용 참고 범위</strong> (시장 일반 기준)<br>
+            • 디지털 도어락 개문: 5만원~15만원<br>
+            • 야간/주말 할증: +20~50%<br><br>
+            ⚠️ <strong>주의사항</strong><br>
+            • 신분증 확인 요청은 정상입니다<br>
+            • 작업 전 견적 확인을 권장합니다<br>
+            • 현장 추가 비용 발생 시 설명을 요청하세요<br><br>
+            ℹ️ 본 정보는 참고용이며, 실제 비용은 업체별로 다릅니다.<br>
+            본 앱은 업체 연결/예약/배차/결제를 제공하지 않습니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">5</div>
+      <div class="step-content">
+        <h3>User Gets Helpful Information</h3>
+        <p>The user now has a better understanding of their situation and can make informed decisions on their own.</p>
+        <div class="example-chat">
+          <div class="chat-user">
+            감사합니다. 대략적인 비용 범위를 알게 됐네요.
+          </div>
+          <div class="chat-assistant">
+            네, 도움이 되셨다니 다행입니다. 추가로 궁금한 점이 있으시면 언제든 물어보세요. 안전하게 해결되시길 바랍니다! 🔑
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="intro">
+      <h2>Additional Resources</h2>
+      <p>Users can access these informational pages for more details:</p>
+
+      <div class="info-links">
+        <a href="/faq" class="info-link">FAQ (자주 묻는 질문)</a>
+        <a href="/guide" class="info-link">Safety Guide (안전 가이드)</a>
+        <a href="/pricing" class="info-link">Price Info (가격 안내)</a>
+        <a href="/support" class="info-link">Customer Support (고객 지원)</a>
+      </div>
+    </div>
+
+    <div class="intro">
+      <h2>Demo Account</h2>
+      <p>For testing purposes, use the following demo credentials:</p>
+      <ul style="margin-top: 12px; padding-left: 20px; color: #666;">
+        <li><strong>Email:</strong> reviewer@openai.com</li>
+        <li><strong>Password:</strong> klygo-demo-2024</li>
+      </ul>
+      <p style="margin-top: 12px; color: #999; font-size: 14px;">
+        Access the demo login at: <a href="/login">https://klygo.online/login</a> (Demo tab)
+      </p>
+    </div>
+
+    <div class="footer">
+      <p>&copy; 2024 klygo. All rights reserved.</p>
+      <p style="margin-top: 8px;">
+        <a href="/privacy" style="color: #667eea;">Privacy Policy</a> |
+        <a href="/terms" style="color: #667eea;">Terms of Service</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
