@@ -153,7 +153,7 @@
       </div>
       <div class="req-item">
         <span>Format:</span>
-        <span class="req-value">PNG 2x</span>
+        <span class="req-value">PNG (706px)</span>
       </div>
     </div>
 
@@ -352,17 +352,18 @@
         iframe.style.height = contentHeight + 'px';
 
         // Capture using html2canvas
+        // OpenAI requires exactly 706px width PNG file
         const canvas = await html2canvas(container, {
           width: 706,
           height: contentHeight,
-          scale: 2, // 2x for retina
+          scale: 1, // 1x to get exact 706px output
           useCORS: true,
           backgroundColor: '#ffffff',
         });
 
         // Download
         const link = document.createElement('a');
-        link.download = `klygo-${key}-widget-706x${contentHeight}@2x.png`;
+        link.download = `klygo-${key}-widget-706x${contentHeight}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
 
