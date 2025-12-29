@@ -973,40 +973,8 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
   }
 
   // =========================================================
-  // Serve static files from /public
+  // MCP endpoint (MUST be before static files)
   // =========================================================
-  if (req.method === 'GET') {
-    const publicPath = join(__dirname, '../public');
-    let filePath = url.pathname === '/' ? '/index.html' : url.pathname;
-
-    if (filePath.includes('..')) {
-      res.writeHead(403).end('Forbidden');
-      return;
-    }
-
-    const fullPath = join(publicPath, filePath);
-
-    try {
-      const content = readFileSync(fullPath);
-      const ext = filePath.split('.').pop() ?? 'html';
-      const mimeTypes: Record<string, string> = {
-        html: 'text/html',
-        css: 'text/css',
-        js: 'application/javascript',
-        json: 'application/json',
-        png: 'image/png',
-        jpg: 'image/jpeg',
-        svg: 'image/svg+xml',
-      };
-      res.writeHead(200, { 'Content-Type': mimeTypes[ext] ?? 'text/plain' });
-      res.end(content);
-      return;
-    } catch {
-      // File not found - continue to MCP
-    }
-  }
-
-  // MCP endpoint
   const MCP_METHODS = new Set(['POST', 'GET', 'DELETE']);
   if (url.pathname === MCP_PATH && req.method && MCP_METHODS.has(req.method)) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -1033,6 +1001,42 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
       }
     }
     return;
+  }
+
+  // =========================================================
+  // Serve static files from /public
+  // =========================================================
+  if (req.method === 'GET') {
+    const publicPath = join(__dirname, '../public');
+    let filePath = url.pathname === '/' ? '/index.html' : url.pathname;
+
+    if (filePath.includes('..')) {
+      res.writeHead(403).end('Forbidden');
+      return;
+    }
+
+    const fullPath = join(publicPath, filePath);
+
+    try {
+      const content = readFileSync(fullPath);
+      // Get extension, handle files without extension (like openai-apps-challenge)
+      const ext = filePath.includes('.') ? filePath.split('.').pop() ?? '' : '';
+      const mimeTypes: Record<string, string> = {
+        html: 'text/html',
+        css: 'text/css',
+        js: 'application/javascript',
+        json: 'application/json',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        svg: 'image/svg+xml',
+        '': 'text/plain', // For files without extension
+      };
+      res.writeHead(200, { 'Content-Type': mimeTypes[ext] ?? 'text/plain' });
+      res.end(content);
+      return;
+    } catch {
+      // File not found - 404
+    }
   }
 
   // 404
