@@ -465,8 +465,15 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
     return;
   }
 
-  // Health check
-  if (req.method === 'GET' && url.pathname === '/') {
+  // Health check endpoints (keep "/" for static files)
+  if (req.method === 'GET' && url.pathname === '/health') {
+    res.writeHead(200, { 'content-type': 'text/plain' });
+    res.end('OK');
+    return;
+  }
+
+  // API status (JSON)
+  if (req.method === 'GET' && url.pathname === '/api/status') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({
       service: 'klygo',
@@ -476,12 +483,6 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
       note: 'Information only - no dispatch/booking/payment',
       infoPages: INFO_URLS,
     }));
-    return;
-  }
-
-  if (req.method === 'GET' && url.pathname === '/health') {
-    res.writeHead(200, { 'content-type': 'text/plain' });
-    res.end('OK');
     return;
   }
 
