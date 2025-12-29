@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>klygo Widget Preview</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 40px 20px;
+      margin: 0;
+    }
+    .preview-container {
+      max-width: 450px;
+      margin: 0 auto;
+    }
+    .preview-title {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 12px;
+      padding-left: 4px;
+    }
+    .widget-frame {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+    .widget-frame iframe {
+      width: 100%;
+      height: 400px;
+      border: none;
+    }
+    .screenshot-guide {
+      background: #e3f2fd;
+      border: 1px solid #90caf9;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 40px;
+      font-size: 14px;
+      color: #1565c0;
+    }
+    .screenshot-guide h3 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+    }
+    .screenshot-guide ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <div class="screenshot-guide">
+      <h3>📸 스크린샷 가이드</h3>
+      <ul>
+        <li>각 위젯을 706px 너비로 캡쳐</li>
+        <li>높이: 400~860px</li>
+        <li>PNG 형식, 2x 해상도</li>
+      </ul>
+    </div>
+
+    <div class="preview-title">1. 상황 평가 위젯 (assess_situation)</div>
+    <div class="widget-frame">
+      <iframe id="assess-widget" srcdoc=""></iframe>
+    </div>
+
+    <div class="preview-title">2. 도어락 분석 위젯 (analyze_lock)</div>
+    <div class="widget-frame">
+      <iframe id="lock-widget" srcdoc=""></iframe>
+    </div>
+
+    <div class="preview-title">3. 상황별 안내 위젯 (get_recommendation)</div>
+    <div class="widget-frame">
+      <iframe id="recommend-widget" srcdoc=""></iframe>
+    </div>
+  </div>
+
+  <script>
+    // Mock data for widgets
+    const mockAssessData = {
+      situationType: 'door_locked',
+      situationLabel: '문 잠김',
+      urgency: 'now',
+      urgencyLabel: '지금 바로',
+      isOwner: true,
+      canVerifyIdentity: true,
+      allowDamage: false,
+      needsWarning: false,
+    };
+
+    const mockLockData = {
+      lockType: 'digital',
+      lockTypeLabel: '디지털 도어락',
+      brand: 'Samsung',
+      difficulty: 'medium',
+      difficultyLabel: '보통 (일반 디지털 도어락)',
+      difficultyLevel: 2,
+      estimatedTime: 25,
+      costMin: 50000,
+      costMax: 120000,
+      calloutFee: 35000,
+    };
+
+    const mockRecommendData = {
+      level: 'technician',
+      levelLabel: '전문 기사 권장',
+      summary: '이 상황은 전문 기사의 도움이 필요해 보입니다.',
+      tips: [
+        '작업 전 반드시 견적을 확인하세요',
+        '추가비 항목(파손/심야 등)을 미리 문의하세요',
+        '신분증 등 본인 확인 서류를 준비하세요',
+      ],
+      costRange: { min: 80000, max: 160000 },
+      infoLinks: {
+        faq: 'https://klygo.online/faq',
+        guide: 'https://klygo.online/guide',
+        pricing: 'https://klygo.online/pricing',
+      },
+    };
+
+    // Inject mock window.openai into iframe
+    function injectWidget(iframeId, widgetHtml, mockData) {
+      const iframe = document.getElementById(iframeId);
+      const injectedHtml = widgetHtml.replace(
+        '</head>',
+        `<script>
+          window.openai = {
+            toolOutput: {
+              structuredContent: ${JSON.stringify(mockData)}
+            }
+          };
+        <\/script></head>`
+      );
+      iframe.srcdoc = injectedHtml;
+    }
+
+    // Load widgets
+    fetch('/api/widget/assess-result')
+      .then(r => r.text())
+      .then(html => injectWidget('assess-widget', html, mockAssessData))
+      .catch(() => console.log('Assess widget not available'));
+
+    fetch('/api/widget/lock-analysis')
+      .then(r => r.text())
+      .then(html => injectWidget('lock-widget', html, mockLockData))
+      .catch(() => console.log('Lock widget not available'));
+
+    fetch('/api/widget/recommendation')
+      .then(r => r.text())
+      .then(html => injectWidget('recommend-widget', html, mockRecommendData))
+      .catch(() => console.log('Recommend widget not available'));
+  </script>
+</body>
+</html>

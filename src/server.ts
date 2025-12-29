@@ -461,6 +461,27 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
   }
 
   // =========================================================
+  // Widget Preview Endpoints (for screenshot capture)
+  // =========================================================
+  if (req.method === 'GET' && url.pathname === '/api/widget/assess-result') {
+    res.writeHead(200, { 'content-type': 'text/html', 'Access-Control-Allow-Origin': '*' });
+    res.end(WIDGET_HTML.assessResult);
+    return;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/widget/lock-analysis') {
+    res.writeHead(200, { 'content-type': 'text/html', 'Access-Control-Allow-Origin': '*' });
+    res.end(WIDGET_HTML.lockAnalysis);
+    return;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/widget/recommendation') {
+    res.writeHead(200, { 'content-type': 'text/html', 'Access-Control-Allow-Origin': '*' });
+    res.end(WIDGET_HTML.recommendation);
+    return;
+  }
+
+  // =========================================================
   // EXTERNAL DISPATCH API (웹/카카오에서 호출)
   // =========================================================
 
