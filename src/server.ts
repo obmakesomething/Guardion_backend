@@ -44,6 +44,12 @@ import {
   linkCustomerToRequest,
 } from './modules/auth/index.js';
 import { sendKakaoAlimtalk } from './modules/solapi/index.js';
+import {
+  createAssessResultWidget,
+  createLockAnalysisWidget,
+  createRecommendationWidget,
+  WIDGET_URIS,
+} from './widgets/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -82,13 +88,12 @@ function sendJson(res: ServerResponse, status: number, data: unknown) {
   res.end(JSON.stringify(data));
 }
 
-// Load widget HTML
-let widgetHtml: string;
-try {
-  widgetHtml = readFileSync(join(__dirname, '../public/klygo-widget.html'), 'utf8');
-} catch {
-  widgetHtml = '<html><body><h1>klygo Widget</h1></body></html>';
-}
+// Widget HTML templates (generated dynamically)
+const WIDGET_HTML = {
+  assessResult: createAssessResultWidget(),
+  lockAnalysis: createLockAnalysisWidget(),
+  recommendation: createRecommendationWidget(),
+};
 
 // ============================================================
 // NEW TOOL SCHEMAS - Triage Only (No dispatch/payment in app)
@@ -121,53 +126,70 @@ const getRecommendationSchema = {
   roughArea: z.string().optional().describe('대략적 지역 (예: 서울 성동구) - 정확한 주소 아님'),
 };
 
-// Widget state interface - Simplified for triage
-interface WidgetState {
-  status: 'idle' | 'assessing' | 'analyzing' | 'recommendation';
-  assessment?: {
-    situationType: string;
-    isOwner: boolean;
-    urgency: string;
-    allowDamage: boolean;
-  };
-  lockAnalysis?: {
-    lockType: string;
-    brand: string | null;
-    difficulty: string;
-    estimatedTime: number;
-    costRange: { min: number; max: number };
-  };
-  recommendation?: {
-    level: 'diy' | 'technician' | 'emergency';
-    summary: string;
-    externalUrl: string;
-  };
-}
-
-let currentWidgetState: WidgetState = { status: 'idle' };
-
-function buildWidgetResponse(message: string) {
-  return {
-    content: [{ type: 'text' as const, text: message }],
-    structuredContent: { widgetState: currentWidgetState },
-  };
-}
+// Note: Widget state is now handled via structuredContent in each tool response
 
 function createklygoServer() {
   const server = new McpServer({ name: 'klygo', version: '2.0.0' });
 
-  // Register the widget resource
+  // ============================================================
+  // Register Widget Resources (Inline Cards)
+  // ============================================================
+
+  // Widget 1: Assess Situation Result
   server.registerResource(
-    'klygo-widget',
-    'ui://widget/klygo.html',
-    { description: 'klygo 긴급 개문 서비스 - 상담 위젯' },
+    'assess-result-widget',
+    WIDGET_URIS.assessResult,
+    { description: '상황 평가 결과 위젯' },
     async () => ({
       contents: [
         {
-          uri: 'ui://widget/klygo.html',
+          uri: WIDGET_URIS.assessResult,
           mimeType: 'text/html+skybridge',
-          text: widgetHtml,
-          _meta: { 'openai/widgetPrefersBorder': true },
+          text: WIDGET_HTML.assessResult,
+          _meta: {
+            'openai/widgetPrefersBorder': true,
+            'openai/widgetDescription': '사용자의 문 잠김/열쇠 분실 상황을 평가한 결과를 표시합니다.',
+          },
+        },
+      ],
+    })
+  );
+
+  // Widget 2: Lock Analysis Result
+  server.registerResource(
+    'lock-analysis-widget',
+    WIDGET_URIS.lockAnalysis,
+    { description: '도어락 분석 결과 위젯' },
+    async () => ({
+      contents: [
+        {
+          uri: WIDGET_URIS.lockAnalysis,
+          mimeType: 'text/html+skybridge',
+          text: WIDGET_HTML.lockAnalysis,
+          _meta: {
+            'openai/widgetPrefersBorder': true,
+            'openai/widgetDescription': '도어락 종류, 난이도, 예상 비용 범위를 표시합니다.',
+          },
+        },
+      ],
+    })
+  );
+
+  // Widget 3: Recommendation Result
+  server.registerResource(
+    'recommendation-widget',
+    WIDGET_URIS.recommendation,
+    { description: '상황별 안내 위젯' },
+    async () => ({
+      contents: [
+        {
+          uri: WIDGET_URIS.recommendation,
+          mimeType: 'text/html+skybridge',
+          text: WIDGET_HTML.recommendation,
+          _meta: {
+            'openai/widgetPrefersBorder': true,
+            'openai/widgetDescription': 'DIY 가능 여부, 비용 범위, 주의사항을 안내합니다.',
+          },
         },
       ],
     })
@@ -183,56 +205,50 @@ function createklygoServer() {
       description: '문 잠김/열쇠 분실 등 상황을 평가하고, DIY 가능 여부와 기사 호출 필요성을 판단합니다.',
       inputSchema: assessSituationSchema,
       annotations: {
-        readOnlyHint: true,     // 읽기 전용 - 외부 시스템 변경 없음
-        destructiveHint: false, // 데이터 삭제/파괴 없음
-        openWorldHint: false,   // 외부 API/서비스 호출 없음
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
       },
+      _meta: { 'openai/outputTemplate': WIDGET_URIS.assessResult },
     },
     async (args) => {
-      currentWidgetState = {
-        status: 'assessing',
-        assessment: {
-          situationType: args.situationType,
-          isOwner: args.isOwner,
-          urgency: args.urgency,
-          allowDamage: args.allowDamage,
-        },
-      };
-
-      // 본인 확인 불가 시 경고
-      if (!args.isOwner || !args.canVerifyIdentity) {
-        return buildWidgetResponse(
-          `⚠️ 주의사항\n\n` +
-          `본인 거주지가 아니거나 신분 확인이 어려운 경우,\n` +
-          `기사님이 현장에서 신분 확인을 요청할 수 있습니다.\n\n` +
-          `• 신분증 (주민등록증, 운전면허증)\n` +
-          `• 거주 증빙 (등기부등본, 임대차계약서)\n` +
-          `• 관리사무소/경비실 확인\n\n` +
-          `위 서류를 준비해주시면 원활한 서비스가 가능합니다.`
-        );
-      }
-
-      const situationNames: Record<string, string> = {
+      const situationLabels: Record<string, string> = {
         door_locked: '문 잠김',
         key_lost: '열쇠 분실',
         lock_broken: '도어락 고장',
         other: '기타 상황',
       };
 
-      const urgencyNames: Record<string, string> = {
+      const urgencyLabels: Record<string, string> = {
         now: '지금 바로',
         today: '오늘 중',
         tomorrow: '내일',
       };
 
-      return buildWidgetResponse(
-        `📋 상황 확인\n\n` +
-        `• 상황: ${situationNames[args.situationType]}\n` +
-        `• 긴급도: ${urgencyNames[args.urgency]}\n` +
-        `• 파손 허용: ${args.allowDamage ? '예' : '아니오 (무파괴 개문 시도)'}\n\n` +
-        `다음으로, 도어락 종류를 알려주시거나 사진을 보내주세요.\n` +
-        `도어락 분석을 통해 예상 비용과 시간을 안내해드립니다.`
-      );
+      // Check if identity warning is needed
+      const needsWarning = !args.isOwner || !args.canVerifyIdentity;
+      const warningMessage = needsWarning
+        ? '본인 거주지가 아니거나 신분 확인이 어려운 경우, 기사님이 현장에서 신분증 또는 거주 증빙을 요청할 수 있습니다.'
+        : undefined;
+
+      // Build structured content for widget
+      const structuredContent = {
+        situationType: args.situationType,
+        situationLabel: situationLabels[args.situationType] || args.situationType,
+        urgency: args.urgency,
+        urgencyLabel: urgencyLabels[args.urgency] || args.urgency,
+        isOwner: args.isOwner,
+        canVerifyIdentity: args.canVerifyIdentity,
+        allowDamage: args.allowDamage,
+        needsWarning,
+        warningMessage,
+      };
+
+      return {
+        content: [{ type: 'text' as const, text: `상황 평가 완료: ${situationLabels[args.situationType]}, 긴급도: ${urgencyLabels[args.urgency]}` }],
+        structuredContent,
+        _meta: { 'openai/outputTemplate': WIDGET_URIS.assessResult },
+      };
     }
   );
 
@@ -246,66 +262,55 @@ function createklygoServer() {
       description: '도어락 사진이나 설명을 기반으로 종류, 난이도, 예상 비용 범위를 분석합니다.',
       inputSchema: analyzeLockSchema,
       annotations: {
-        readOnlyHint: true,     // 읽기 전용 - 외부 시스템 변경 없음
-        destructiveHint: false, // 데이터 삭제/파괴 없음
-        openWorldHint: false,   // 외부 API/서비스 호출 없음
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
       },
+      _meta: { 'openai/outputTemplate': WIDGET_URIS.lockAnalysis },
     },
     async (args) => {
-      currentWidgetState = { ...currentWidgetState, status: 'analyzing' };
-
       let analysis;
       if (args.imageUrl) {
         analysis = await analyzeLockImage(args.imageUrl);
       } else if (args.description) {
         analysis = analyzeLockFromDescription(args.description);
       } else {
-        return buildWidgetResponse('도어락 사진 또는 설명을 제공해주세요.');
+        return {
+          content: [{ type: 'text' as const, text: '도어락 사진 또는 설명을 제공해주세요.' }],
+          structuredContent: { error: '도어락 정보가 필요합니다.' },
+        };
       }
 
       // Get estimated cost range
       const costRange = estimateBalanceRange(analysis.difficulty);
 
-      currentWidgetState = {
-        ...currentWidgetState,
-        status: 'analyzing',
-        lockAnalysis: {
-          lockType: getLockTypeDescription(analysis.lockType),
-          brand: analysis.brand,
-          difficulty: getDifficultyDescription(analysis.difficulty),
-          estimatedTime: analysis.estimatedTime,
-          costRange: { min: costRange.min, max: costRange.max },
-        },
+      // Map difficulty to level (1-4)
+      const difficultyLevels: Record<string, number> = {
+        easy: 1,
+        medium: 2,
+        hard: 3,
+        expert: 4,
       };
 
-      const message = [
-        `🔐 도어락 분석 결과`,
-        ``,
-        `• 종류: ${getLockTypeDescription(analysis.lockType)}`,
-        analysis.brand ? `• 브랜드: ${analysis.brand}` : null,
-        `• 난이도: ${getDifficultyDescription(analysis.difficulty)}`,
-        `• 예상 작업 시간: 약 ${analysis.estimatedTime}분`,
-        ``,
-        `━━━━━━━━━━━━━━━━━━━━━━`,
-        `💰 예상 비용 범위`,
-        `━━━━━━━━━━━━━━━━━━━━━━`,
-        `• 출장비: ${formatPrice(config.pricing.calloutFee)} (선결제)`,
-        `• 작업비: ${formatPrice(costRange.min)} ~ ${formatPrice(costRange.max)}`,
-        `• 총 예상: ${formatPrice(costRange.min + config.pricing.calloutFee)} ~ ${formatPrice(costRange.max + config.pricing.calloutFee)}`,
-        ``,
-        `※ 실제 비용은 현장 상황에 따라 달라질 수 있습니다.`,
-        ``,
-        `━━━━━━━━━━━━━━━━━━━━━━`,
-        `🔧 작업 방식 안내`,
-        `━━━━━━━━━━━━━━━━━━━━━━`,
-        `• 무파괴 개문: 도어락 손상 없이 개문 (가능한 경우)`,
-        `• 파괴 개문: 도어락 해체 후 개문 (불가피한 경우)`,
-        `• 파괴 개문 시 새 도어락 설치 비용 별도 발생`,
-      ]
-        .filter(Boolean)
-        .join('\n');
+      // Build structured content for widget
+      const structuredContent = {
+        lockType: analysis.lockType,
+        lockTypeLabel: getLockTypeDescription(analysis.lockType),
+        brand: analysis.brand,
+        difficulty: analysis.difficulty,
+        difficultyLabel: getDifficultyDescription(analysis.difficulty),
+        difficultyLevel: difficultyLevels[analysis.difficulty] || 2,
+        estimatedTime: analysis.estimatedTime,
+        costMin: costRange.min,
+        costMax: costRange.max,
+        calloutFee: config.pricing.calloutFee,
+      };
 
-      return buildWidgetResponse(message);
+      return {
+        content: [{ type: 'text' as const, text: `도어락 분석 완료: ${getLockTypeDescription(analysis.lockType)}, 난이도: ${getDifficultyDescription(analysis.difficulty)}` }],
+        structuredContent,
+        _meta: { 'openai/outputTemplate': WIDGET_URIS.lockAnalysis },
+      };
     }
   );
 
@@ -319,10 +324,11 @@ function createklygoServer() {
       description: '상황 분석 결과를 바탕으로 DIY 가능 여부, 일반적 비용 범위, 주의사항을 안내합니다. 업체 연결/예약/배차/결제는 제공하지 않습니다.',
       inputSchema: getRecommendationSchema,
       annotations: {
-        readOnlyHint: true,     // 읽기 전용 - 정보 제공만
-        destructiveHint: false, // 데이터 삭제/파괴 없음
-        openWorldHint: false,   // 외부 API/서비스 호출 없음
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
       },
+      _meta: { 'openai/outputTemplate': WIDGET_URIS.recommendation },
     },
     async (args) => {
       // Determine recommendation level
@@ -336,7 +342,7 @@ function createklygoServer() {
         args.urgency !== 'now'
       ) {
         level = 'diy';
-        summary = 'DIY로 해결 가능할 수 있습니다';
+        summary = '간단한 기계식 잠금장치로, DIY 해결 가능성이 있습니다.';
       }
       // 긴급 케이스
       else if (
@@ -344,97 +350,65 @@ function createklygoServer() {
         (args.situationType === 'door_locked' || args.difficulty === 'expert')
       ) {
         level = 'emergency';
-        summary = '긴급 출동이 필요합니다';
+        summary = '빠른 조치가 필요한 긴급 상황입니다.';
       }
       // 일반 기사 호출
       else {
         level = 'technician';
-        summary = '전문 기사님 호출을 권장합니다';
+        summary = '이 상황은 전문 기사의 도움이 필요해 보입니다.';
       }
 
-      currentWidgetState = {
-        ...currentWidgetState,
-        status: 'recommendation',
-        recommendation: {
-          level,
-          summary,
-          externalUrl: INFO_URLS.faq,
+      // Tips based on level
+      const tipsMap: Record<string, string[]> = {
+        diy: [
+          '관리사무소/경비실에 마스터키 문의',
+          '가족/동거인에게 여분 열쇠 요청',
+          '무리한 시도 시 도어락 손상 주의',
+        ],
+        technician: [
+          '작업 전 반드시 견적을 확인하세요',
+          '추가비 항목(파손/심야 등)을 미리 문의하세요',
+          '신분증 등 본인 확인 서류를 준비하세요',
+        ],
+        emergency: [
+          '안전상 문제가 있다면 119에 먼저 연락하세요',
+          '야간/주말에는 할증이 적용될 수 있습니다',
+          '불합리한 요금은 소비자원에 신고 가능합니다',
+        ],
+      };
+
+      // Cost range based on level
+      const costRangeMap: Record<string, { min: number; max: number }> = {
+        diy: { min: 0, max: 0 },
+        technician: { min: 80000, max: 160000 },
+        emergency: { min: 100000, max: 200000 },
+      };
+
+      // Build structured content for widget
+      const structuredContent = {
+        level,
+        levelLabel: level === 'diy' ? 'DIY 가능' : level === 'technician' ? '전문 기사 권장' : '긴급 출동 필요',
+        summary,
+        tips: tipsMap[level] || [],
+        costRange: level !== 'diy' ? costRangeMap[level] : undefined,
+        infoLinks: {
+          faq: INFO_URLS.faq,
+          guide: INFO_URLS.safetyGuide,
+          pricing: INFO_URLS.priceInfo,
         },
       };
 
-      const levelMessages: Record<string, string[]> = {
-        diy: [
-          `✅ DIY 가능성 있음`,
-          ``,
-          `간단한 기계식 잠금장치로 보입니다.`,
-          `아래 방법을 먼저 시도해보세요:`,
-          ``,
-          `1. 관리사무소/경비실에 마스터키 문의`,
-          `2. 가족/동거인에게 여분 열쇠 요청`,
-          `3. 카드 등으로 래치 밀어보기 (일부 도어락)`,
-          ``,
-          `⚠️ 무리한 시도 시 도어락이 손상될 수 있습니다.`,
-        ],
-        technician: [
-          `👨‍🔧 전문 기사 필요`,
-          ``,
-          `이 상황은 전문 기사의 도움이 필요해 보입니다.`,
-          ``,
-          `━━━━━━━━━━━━━━━━━━━━━━`,
-          `💰 일반적인 비용 범위 (참고용)`,
-          `━━━━━━━━━━━━━━━━━━━━━━`,
-          `• 출장비: 3~4만원대`,
-          `• 작업비: 5~12만원대 (난이도별 상이)`,
-          ``,
-          `※ 본 금액은 정보 제공용 범위이며,`,
-          `  특정 업체의 견적/오퍼가 아닙니다.`,
-        ],
-        emergency: [
-          `🚨 긴급 상황 안내`,
-          ``,
-          `빠른 조치가 필요한 상황입니다.`,
-          ``,
-          `• 야간/주말에는 할증이 적용될 수 있습니다`,
-          `• 안전상 문제가 있다면 119에 먼저 연락하세요`,
-          ``,
-          `━━━━━━━━━━━━━━━━━━━━━━`,
-          `💰 일반적인 비용 범위 (참고용)`,
-          `━━━━━━━━━━━━━━━━━━━━━━`,
-          `• 출장비: 3~5만원대 (야간 할증 포함 시)`,
-          `• 작업비: 5~15만원대`,
-          ``,
-          `※ 본 금액은 정보 제공용 범위이며,`,
-          `  특정 업체의 견적/오퍼가 아닙니다.`,
-        ],
+      const levelLabels: Record<string, string> = {
+        diy: 'DIY 가능',
+        technician: '전문 기사 권장',
+        emergency: '긴급 출동 필요',
       };
 
-      // 정보 제공용 안내 (주문/배차 유도 아님)
-      const infoSection = [
-        ``,
-        `━━━━━━━━━━━━━━━━━━━━━━`,
-        `📚 추가 정보`,
-        `━━━━━━━━━━━━━━━━━━━━━━`,
-        ``,
-        `• 자주 묻는 질문: ${INFO_URLS.faq}`,
-        `• 안전 가이드: ${INFO_URLS.safetyGuide}`,
-        `• 가격 구성 안내: ${INFO_URLS.priceInfo}`,
-        ``,
-        `━━━━━━━━━━━━━━━━━━━━━━`,
-        `⚠️ 중요 안내`,
-        `━━━━━━━━━━━━━━━━━━━━━━`,
-        `• 본 앱은 정보 제공 목적이며,`,
-        `  업체 연결/예약/배차/결제를 하지 않습니다.`,
-        `• 실제 서비스 이용은 별도 채널을 통해 진행하세요.`,
-        ``,
-        `🔒 바가지 방지 팁`,
-        `• 작업 전 반드시 견적을 확인하세요`,
-        `• 추가비 항목(파손/심야 등)을 미리 문의하세요`,
-        `• 불합리한 요금은 소비자원에 신고 가능합니다`,
-      ];
-
-      const message = [...levelMessages[level], ...infoSection].filter(Boolean).join('\n');
-
-      return buildWidgetResponse(message);
+      return {
+        content: [{ type: 'text' as const, text: `안내 완료: ${levelLabels[level]} - ${summary}` }],
+        structuredContent,
+        _meta: { 'openai/outputTemplate': WIDGET_URIS.recommendation },
+      };
     }
   );
 
