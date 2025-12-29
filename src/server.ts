@@ -183,7 +183,9 @@ function createklygoServer() {
       description: '문 잠김/열쇠 분실 등 상황을 평가하고, DIY 가능 여부와 기사 호출 필요성을 판단합니다.',
       inputSchema: assessSituationSchema,
       annotations: {
-        readOnlyHint: true,  // 읽기 전용 - 외부 시스템 변경 없음
+        readOnlyHint: true,     // 읽기 전용 - 외부 시스템 변경 없음
+        destructiveHint: false, // 데이터 삭제/파괴 없음
+        openWorldHint: false,   // 외부 API/서비스 호출 없음
       },
     },
     async (args) => {
@@ -244,7 +246,9 @@ function createklygoServer() {
       description: '도어락 사진이나 설명을 기반으로 종류, 난이도, 예상 비용 범위를 분석합니다.',
       inputSchema: analyzeLockSchema,
       annotations: {
-        readOnlyHint: true,  // 읽기 전용 - 외부 시스템 변경 없음
+        readOnlyHint: true,     // 읽기 전용 - 외부 시스템 변경 없음
+        destructiveHint: false, // 데이터 삭제/파괴 없음
+        openWorldHint: false,   // 외부 API/서비스 호출 없음
       },
     },
     async (args) => {
@@ -315,7 +319,9 @@ function createklygoServer() {
       description: '상황 분석 결과를 바탕으로 DIY 가능 여부, 일반적 비용 범위, 주의사항을 안내합니다. 업체 연결/예약/배차/결제는 제공하지 않습니다.',
       inputSchema: getRecommendationSchema,
       annotations: {
-        readOnlyHint: true,  // 읽기 전용 - 정보 제공만
+        readOnlyHint: true,     // 읽기 전용 - 정보 제공만
+        destructiveHint: false, // 데이터 삭제/파괴 없음
+        openWorldHint: false,   // 외부 API/서비스 호출 없음
       },
     },
     async (args) => {
