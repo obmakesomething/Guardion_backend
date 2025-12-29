@@ -3,156 +3,388 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>klygo Widget Preview</title>
+  <title>klygo Widget Screenshot Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f5f5f5;
+      background: #1a1a1a;
+      color: white;
+      min-height: 100vh;
       padding: 40px 20px;
-      margin: 0;
     }
-    .preview-container {
-      max-width: 450px;
+    .container {
+      max-width: 800px;
       margin: 0 auto;
     }
-    .preview-title {
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 32px;
+    }
+    .requirements {
+      background: #2a2a2a;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 32px;
+      display: flex;
+      justify-content: center;
+      gap: 32px;
       font-size: 14px;
-      color: #666;
-      margin-bottom: 12px;
-      padding-left: 4px;
+    }
+    .req-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .req-value {
+      color: #10a37f;
+      font-weight: 600;
+    }
+    .widget-section {
+      background: #2a2a2a;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .widget-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .widget-prompt {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+    }
+    .download-btn {
+      background: #10a37f;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+    .download-btn:hover {
+      background: #0d8a6a;
+    }
+    .download-btn:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    .widget-frame-wrapper {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      width: 353px; /* 706px / 2 for display, but capture at 2x */
     }
     .widget-frame {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-      overflow: hidden;
-      margin-bottom: 40px;
-    }
-    .widget-frame iframe {
-      width: 100%;
-      height: 400px;
+      width: 353px;
+      height: auto;
+      min-height: 200px;
       border: none;
+      display: block;
     }
-    .screenshot-guide {
-      background: #e3f2fd;
-      border: 1px solid #90caf9;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 40px;
-      font-size: 14px;
-      color: #1565c0;
+    .capture-area {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      width: 706px;
+      background: white;
+      border-radius: 0;
     }
-    .screenshot-guide h3 {
-      margin: 0 0 8px 0;
-      font-size: 14px;
+    .status {
+      font-size: 12px;
+      color: #10a37f;
+      margin-top: 12px;
+      text-align: center;
     }
-    .screenshot-guide ul {
-      margin: 0;
-      padding-left: 20px;
+    .all-download {
+      text-align: center;
+      margin-top: 32px;
+    }
+    .all-download button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 16px 48px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .all-download button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
     }
   </style>
 </head>
 <body>
-  <div class="preview-container">
-    <div class="screenshot-guide">
-      <h3>📸 스크린샷 가이드</h3>
-      <ul>
-        <li>각 위젯을 706px 너비로 캡쳐</li>
-        <li>높이: 400~860px</li>
-        <li>PNG 형식, 2x 해상도</li>
-      </ul>
+  <div class="container">
+    <h1>📸 klygo Screenshot Generator</h1>
+    <p class="subtitle">OpenAI App 제출용 스크린샷 생성기</p>
+
+    <div class="requirements">
+      <div class="req-item">
+        <span>Width:</span>
+        <span class="req-value">706px</span>
+      </div>
+      <div class="req-item">
+        <span>Height:</span>
+        <span class="req-value">400-860px</span>
+      </div>
+      <div class="req-item">
+        <span>Format:</span>
+        <span class="req-value">PNG 2x</span>
+      </div>
     </div>
 
-    <div class="preview-title">1. 상황 평가 위젯 (assess_situation)</div>
-    <div class="widget-frame">
-      <iframe id="assess-widget" srcdoc=""></iframe>
+    <!-- Widget 1: Assess Situation -->
+    <div class="widget-section">
+      <div class="widget-header">
+        <div>
+          <div class="widget-title">1. 상황 평가 (assess_situation)</div>
+          <div class="widget-prompt">User prompt: "집 현관문 잠겼어요. 본인 집이고 지금 급해요."</div>
+        </div>
+        <button class="download-btn" onclick="downloadWidget('assess')">
+          <span>⬇️</span> PNG 다운로드
+        </button>
+      </div>
+      <div class="widget-frame-wrapper">
+        <iframe id="assess-frame" class="widget-frame"></iframe>
+      </div>
     </div>
 
-    <div class="preview-title">2. 도어락 분석 위젯 (analyze_lock)</div>
-    <div class="widget-frame">
-      <iframe id="lock-widget" srcdoc=""></iframe>
+    <!-- Widget 2: Lock Analysis -->
+    <div class="widget-section">
+      <div class="widget-header">
+        <div>
+          <div class="widget-title">2. 도어락 분석 (analyze_lock)</div>
+          <div class="widget-prompt">User prompt: "삼성 디지털 도어락인데 비밀번호가 안 먹혀요."</div>
+        </div>
+        <button class="download-btn" onclick="downloadWidget('lock')">
+          <span>⬇️</span> PNG 다운로드
+        </button>
+      </div>
+      <div class="widget-frame-wrapper">
+        <iframe id="lock-frame" class="widget-frame"></iframe>
+      </div>
     </div>
 
-    <div class="preview-title">3. 상황별 안내 위젯 (get_recommendation)</div>
-    <div class="widget-frame">
-      <iframe id="recommend-widget" srcdoc=""></iframe>
+    <!-- Widget 3: Recommendation -->
+    <div class="widget-section">
+      <div class="widget-header">
+        <div>
+          <div class="widget-title">3. 상황별 안내 (get_recommendation)</div>
+          <div class="widget-prompt">User prompt: "어떻게 해야 하나요? 비용은 얼마나 들어요?"</div>
+        </div>
+        <button class="download-btn" onclick="downloadWidget('recommend')">
+          <span>⬇️</span> PNG 다운로드
+        </button>
+      </div>
+      <div class="widget-frame-wrapper">
+        <iframe id="recommend-frame" class="widget-frame"></iframe>
+      </div>
     </div>
+
+    <div class="all-download">
+      <button onclick="downloadAll()">📦 모든 스크린샷 다운로드</button>
+    </div>
+
+    <div id="status" class="status"></div>
   </div>
+
+  <!-- Hidden capture areas -->
+  <div id="capture-assess" class="capture-area"></div>
+  <div id="capture-lock" class="capture-area"></div>
+  <div id="capture-recommend" class="capture-area"></div>
 
   <script>
     // Mock data for widgets
-    const mockAssessData = {
-      situationType: 'door_locked',
-      situationLabel: '문 잠김',
-      urgency: 'now',
-      urgencyLabel: '지금 바로',
-      isOwner: true,
-      canVerifyIdentity: true,
-      allowDamage: false,
-      needsWarning: false,
-    };
-
-    const mockLockData = {
-      lockType: 'digital',
-      lockTypeLabel: '디지털 도어락',
-      brand: 'Samsung',
-      difficulty: 'medium',
-      difficultyLabel: '보통 (일반 디지털 도어락)',
-      difficultyLevel: 2,
-      estimatedTime: 25,
-      costMin: 50000,
-      costMax: 120000,
-      calloutFee: 35000,
-    };
-
-    const mockRecommendData = {
-      level: 'technician',
-      levelLabel: '전문 기사 권장',
-      summary: '이 상황은 전문 기사의 도움이 필요해 보입니다.',
-      tips: [
-        '작업 전 반드시 견적을 확인하세요',
-        '추가비 항목(파손/심야 등)을 미리 문의하세요',
-        '신분증 등 본인 확인 서류를 준비하세요',
-      ],
-      costRange: { min: 80000, max: 160000 },
-      infoLinks: {
-        faq: 'https://klygo.online/faq',
-        guide: 'https://klygo.online/guide',
-        pricing: 'https://klygo.online/pricing',
+    const mockData = {
+      assess: {
+        situationType: 'door_locked',
+        situationLabel: '문 잠김',
+        urgency: 'now',
+        urgencyLabel: '지금 바로',
+        isOwner: true,
+        canVerifyIdentity: true,
+        allowDamage: false,
+        needsWarning: false,
+      },
+      lock: {
+        lockType: 'digital',
+        lockTypeLabel: '디지털 도어락',
+        brand: 'Samsung',
+        difficulty: 'medium',
+        difficultyLabel: '보통 (일반 디지털 도어락)',
+        difficultyLevel: 2,
+        estimatedTime: 25,
+        costMin: 50000,
+        costMax: 120000,
+        calloutFee: 35000,
+      },
+      recommend: {
+        level: 'technician',
+        levelLabel: '전문 기사 권장',
+        summary: '이 상황은 전문 기사의 도움이 필요해 보입니다.',
+        tips: [
+          '작업 전 반드시 견적을 확인하세요',
+          '추가비 항목(파손/심야 등)을 미리 문의하세요',
+          '신분증 등 본인 확인 서류를 준비하세요',
+        ],
+        costRange: { min: 85000, max: 155000 },
+        infoLinks: {
+          faq: 'https://klygo.online/faq',
+          guide: 'https://klygo.online/guide',
+          pricing: 'https://klygo.online/pricing',
+        },
       },
     };
 
-    // Inject mock window.openai into iframe
-    function injectWidget(iframeId, widgetHtml, mockData) {
-      const iframe = document.getElementById(iframeId);
-      const injectedHtml = widgetHtml.replace(
+    const widgetEndpoints = {
+      assess: '/api/widget/assess-result',
+      lock: '/api/widget/lock-analysis',
+      recommend: '/api/widget/recommendation',
+    };
+
+    const widgetHtmlCache = {};
+
+    // Load widgets on page load
+    async function loadWidgets() {
+      for (const [key, endpoint] of Object.entries(widgetEndpoints)) {
+        try {
+          const response = await fetch(endpoint);
+          const html = await response.text();
+          widgetHtmlCache[key] = html;
+
+          // Inject into display iframe
+          const iframe = document.getElementById(`${key}-frame`);
+          const injectedHtml = injectMockData(html, mockData[key]);
+          iframe.srcdoc = injectedHtml;
+
+          // Also prepare capture area
+          const captureArea = document.getElementById(`capture-${key}`);
+          captureArea.innerHTML = `<iframe style="width:706px;height:auto;min-height:400px;border:none;" srcdoc="${escapeHtml(injectedHtml)}"></iframe>`;
+        } catch (err) {
+          console.error(`Failed to load ${key} widget:`, err);
+        }
+      }
+
+      // Adjust iframe heights after load
+      setTimeout(adjustIframeHeights, 500);
+    }
+
+    function injectMockData(html, data) {
+      return html.replace(
         '</head>',
         `<script>
           window.openai = {
-            toolOutput: {
-              structuredContent: ${JSON.stringify(mockData)}
-            }
+            toolOutput: { structuredContent: ${JSON.stringify(data)} }
           };
         <\/script></head>`
       );
-      iframe.srcdoc = injectedHtml;
     }
 
-    // Load widgets
-    fetch('/api/widget/assess-result')
-      .then(r => r.text())
-      .then(html => injectWidget('assess-widget', html, mockAssessData))
-      .catch(() => console.log('Assess widget not available'));
+    function escapeHtml(str) {
+      return str.replace(/"/g, '&quot;');
+    }
 
-    fetch('/api/widget/lock-analysis')
-      .then(r => r.text())
-      .then(html => injectWidget('lock-widget', html, mockLockData))
-      .catch(() => console.log('Lock widget not available'));
+    function adjustIframeHeights() {
+      ['assess', 'lock', 'recommend'].forEach(key => {
+        const iframe = document.getElementById(`${key}-frame`);
+        try {
+          const height = iframe.contentDocument.body.scrollHeight;
+          iframe.style.height = Math.max(200, height) + 'px';
+        } catch (e) {
+          iframe.style.height = '300px';
+        }
+      });
+    }
 
-    fetch('/api/widget/recommendation')
-      .then(r => r.text())
-      .then(html => injectWidget('recommend-widget', html, mockRecommendData))
-      .catch(() => console.log('Recommend widget not available'));
+    function showStatus(msg) {
+      document.getElementById('status').textContent = msg;
+      setTimeout(() => {
+        document.getElementById('status').textContent = '';
+      }, 3000);
+    }
+
+    async function downloadWidget(key) {
+      showStatus(`${key} 스크린샷 생성 중...`);
+
+      try {
+        // Create a temporary container for capturing
+        const container = document.createElement('div');
+        container.style.cssText = 'position:fixed;left:-9999px;top:0;width:706px;background:white;padding:0;';
+        document.body.appendChild(container);
+
+        // Create iframe with exact dimensions
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = 'width:706px;border:none;';
+        iframe.srcdoc = injectMockData(widgetHtmlCache[key], mockData[key]);
+        container.appendChild(iframe);
+
+        // Wait for iframe to load
+        await new Promise(resolve => {
+          iframe.onload = () => setTimeout(resolve, 300);
+        });
+
+        // Get the actual content height
+        const contentHeight = Math.min(860, Math.max(400, iframe.contentDocument.body.scrollHeight + 32));
+        iframe.style.height = contentHeight + 'px';
+
+        // Capture using html2canvas
+        const canvas = await html2canvas(container, {
+          width: 706,
+          height: contentHeight,
+          scale: 2, // 2x for retina
+          useCORS: true,
+          backgroundColor: '#ffffff',
+        });
+
+        // Download
+        const link = document.createElement('a');
+        link.download = `klygo-${key}-widget-706x${contentHeight}@2x.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+
+        // Cleanup
+        document.body.removeChild(container);
+        showStatus(`✅ ${key} 스크린샷 다운로드 완료!`);
+      } catch (err) {
+        console.error(err);
+        showStatus(`❌ 오류: ${err.message}`);
+      }
+    }
+
+    async function downloadAll() {
+      for (const key of ['assess', 'lock', 'recommend']) {
+        await downloadWidget(key);
+        await new Promise(r => setTimeout(r, 500));
+      }
+      showStatus('✅ 모든 스크린샷 다운로드 완료!');
+    }
+
+    // Initialize
+    loadWidgets();
   </script>
 </body>
 </html>
